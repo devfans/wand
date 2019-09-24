@@ -4,6 +4,9 @@ use crate::container::{Scrollable, Container};
 use crate::section::*;
 use crate::content::Content;
 use crate::component::Event;
+use crate::span::*;
+use std::cell::RefCell;
+use std::rc::Rc;
 
 
 pub struct Scene {
@@ -97,6 +100,16 @@ impl Scene {
             state.register_section(section);
         }
         self.container.register(Content::Section { section: section.clone() });
+    }
+    
+    pub fn add_span(&mut self, span: Span) {
+        let span = Rc::new(RefCell::new(span));
+        {
+            let mut state = self.state.borrow_mut();
+            state.register_span(&span);
+        }
+
+        self.container.register(Content::Span { span });
     }
 
     fn consume_event(&mut self, ev: &mut Event) {

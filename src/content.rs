@@ -1,5 +1,6 @@
 use crate::section::*;
 use crate::component::*;
+use crate::span::*;
 
 pub enum Alignment {
     Left,
@@ -13,6 +14,7 @@ pub enum Content {
         section: SectionRef,
     },
     Span {
+        span: SpanRef,
     }
 }
 
@@ -23,7 +25,10 @@ impl Content {
                 let mut section = section.borrow_mut();
                 section.on_resize(left, top, right, bottom)
             },
-            Content::Span {} => {
+            Content::Span { ref span } => {
+                let mut span = span.borrow_mut();
+                let span = span.as_mut();
+                span.on_resize(left, top, right, bottom);
                 (0., 0., true)
             }
         }
@@ -34,7 +39,9 @@ impl Content {
                 let section = section.borrow();
                 section.draw(ctx);
             },
-            Content::Span {} => {
+            Content::Span { ref span } => {
+                let span = span.borrow();
+                span.draw(ctx);
             }
         }
 
@@ -47,7 +54,10 @@ impl Content {
                 let mut section = section.borrow_mut();
                 section.dispatch_event(ev);
             },
-            Content::Span {} => {
+            Content::Span { ref span } => {
+                let mut span = span.borrow_mut();
+                let span = span.as_mut();
+                span.dispatch_event(ev);
             }
         }
     }

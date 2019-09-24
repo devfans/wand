@@ -5,6 +5,7 @@ use crate::content::*;
 use crate::traits::*;
 use crate::utils;
 use crate::component::*;
+use crate::span::*;
 
 use std::cell::RefCell;
 use std::rc::{Rc, Weak};
@@ -67,6 +68,17 @@ impl Section {
 
         self.container.register(Content::Section { section: section.clone() });
     }
+
+    pub fn add_span(&mut self, span: Span) {
+        let span = Rc::new(RefCell::new(span));
+        {
+            let mut state = self.state.borrow_mut();
+            state.register_span(&span);
+        }
+
+        self.container.register(Content::Span { span: span });
+    }
+
 
     pub fn on_resize(&mut self, left: f64, top: f64, right: f64, bottom: f64) -> (f64, f64, bool) {
         utils::log(&format!("Resizing {}", &self.name));

@@ -39,7 +39,8 @@ impl StateProto {
 
     pub fn register_span(&mut self, span: &SpanRef) {
         let item = span.borrow();
-        self.spans.insert(item.name.clone(), Rc::downgrade(span));
+        let item = item.as_ref();
+        self.spans.insert(item.get_name().to_string(), Rc::downgrade(span));
     }
 
     pub fn get_section(&self, name: &str) -> Option<&SectionWeak> {
