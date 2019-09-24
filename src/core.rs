@@ -10,6 +10,7 @@ use crate::traits::*;
 use crate::component::*;
 use crate::section::*;
 use crate::container::Container;
+use crate::span::*;
 
 use std::rc::{Weak, Rc};
 
@@ -20,11 +21,15 @@ pub struct CanvasMeta {
 
 pub struct StateProto {
     sections: HashMap<String, SectionWeak>,
+    spans: HashMap<String, SpanWeak>,
 }
 
 impl StateProto {
     pub fn new() -> State {
-        Rc::new(RefCell::new(StateProto { sections: HashMap::new() }))
+        Rc::new(RefCell::new(StateProto {
+            sections: HashMap::new(),
+            spans: HashMap::new(),
+        }))
     }
 
     pub fn register_section(&mut self, section: &SectionRef) {
@@ -32,9 +37,19 @@ impl StateProto {
         self.sections.insert(item.name.clone(), Rc::downgrade(section));
     }
 
+    pub fn register_span(&mut self, span: &SpanRef) {
+        let item = span.borrow();
+        self.spans.insert(item.name.clone(), Rc::downgrade(span));
+    }
+
     pub fn get_section(&self, name: &str) -> Option<&SectionWeak> {
         self.sections.get(name)
     }
+
+    pub fn get_span(&self, name: &str) -> Option<&SpanWeak> {
+        self.spans.get(name)
+    }
+
 }
 
 pub type State = Rc<RefCell<StateProto>>;
