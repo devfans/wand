@@ -13,19 +13,11 @@ pub fn set_panic_hook() {
 }
 
 
-pub trait DrawOutline {
-    fn draw_outline(&self, ctx: &web_sys::CanvasRenderingContext2d);
+#[wasm_bindgen]
+extern "C" {
+    #[wasm_bindgen(js_namespace = console)]
+    pub fn log(s: &str);
 }
 
-macro_rules! impl_draw_outline {
-    ($type: ty) => {
-        impl DrawOutline for $type {
-            fn draw_outline(&self, ctx: &web_sys::CanvasRenderingContext2d) {
-                ctx.set_stroke_style(&JsValue::from_str("white"));
-                ctx.stroke_rect(self.x - self.w/2., self.y - self.h/2., self.w, self.h);
-            }
-        }
-    }
-}
 
-impl_draw_outline!(Scene);
+

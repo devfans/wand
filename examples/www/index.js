@@ -14,4 +14,8 @@ const resize = () => {
 resize();
 
 window.addEventListener("resize", resize);
+window.addEventListener("mousemove", e => {
+  let rec = canvas.getBoundingClientRect();
+  app.on_mouse_move(e.clientX - rec.left, e.clientY - rec.top);
+});
 

@@ -1,5 +1,4 @@
-use std::cell::Cell;
-use std::rc::Rc;
+use std::cell::{RefCell, Cell};
 
 use std::collections::HashMap;
 
@@ -7,11 +6,38 @@ use wasm_bindgen::prelude::*;
 use wasm_bindgen::JsCast;
 
 use crate::scene::Scene;
+use crate::traits::*;
+use crate::component::*;
+use crate::section::*;
+use crate::container::Container;
+
+use std::rc::{Weak, Rc};
 
 pub struct CanvasMeta {
     pub w: u32,
     pub h: u32,
 }
+
+pub struct StateProto {
+    sections: HashMap<String, SectionWeak>,
+}
+
+impl StateProto {
+    pub fn new() -> State {
+        Rc::new(RefCell::new(StateProto { sections: HashMap::new() }))
+    }
+
+    pub fn register_section(&mut self, section: &SectionRef) {
+        let item = section.borrow();
+        self.sections.insert(item.name.clone(), Rc::downgrade(section));
+    }
+
+    pub fn get_section(&self, name: &str) -> Option<&SectionWeak> {
+        self.sections.get(name)
+    }
+}
+
+pub type State = Rc<RefCell<StateProto>>;
 
 pub struct Application {
     document: web_sys::Document,
@@ -21,6 +47,8 @@ pub struct Application {
     path: String,
     context: web_sys::CanvasRenderingContext2d, 
     meta: CanvasMeta,
+
+    state: State,
 }
 
 impl Application {
@@ -33,8 +61,9 @@ impl Application {
             .unwrap();
 
         let mut scenes = HashMap::new();
+        let state = StateProto::new();
         // Fill in the default scene
-        let scene = Scene::default();
+        let scene = Scene::default(state.clone());
         let path = scene.path.clone();
         scenes.insert(scene.path.clone(), scene);
         let context = canvas.get_context("2d")
@@ -50,13 +79,18 @@ impl Application {
             path,
             context,
             meta,
+            state,
         };
         app.update_canvas_meta();
-        app.on_size_change();
+        app.on_resize();
         app
     }
 
     pub fn register(&mut self, scene: Scene) {
+        // If register with custom scenes the default scene will be removed
+        if self.path.is_empty() {
+            self.scenes.clear();
+        }
         let path = scene.path.clone();
         if self.scenes.get(&path).is_none() {
             self.scenes.insert(scene.path.clone(), scene);
@@ -91,10 +125,35 @@ impl Application {
         self.meta.h = self.canvas.height();
     }
 
-    pub fn on_size_change(&mut self) {
+    pub fn on_resize(&mut self) {
         self.update_canvas_meta();
+        let scene = self.scenes.get_mut(&self.path).unwrap();
+        scene.on_resize(&self.meta);
+        /*
         for scene in self.scenes.values_mut() {
-            scene.on_size_changed(&self.meta);
+            scene.on_resize(&self.meta);
         }
+        */
     }
+
+    pub fn on_mouse_move(&mut self, x: f64, y: f64) {
+        let pos = Position::new(x, y);
+        let mut ev = Event { ev: EventType::MouseMove, pos, consumed: false };
+        let scene = self.scenes.get_mut(&self.path).unwrap();
+        scene.dispatch_event(&mut ev);
+    }
+
+
+    pub fn new_section(&self, name: &str, width: f32, height: f32, padding: f32) -> SectionRef {
+        Section::new(self.state.clone(), name, width, height, padding)
+    }
+
+    pub fn new_section_with_container(&self, name: &str, width: f32, height: f32, container: Container) -> SectionRef {
+        Section::new_with_container(self.state.clone(), name, width, height, container)
+    }
+
+    pub fn get_state(&self) -> State {
+        self.state.clone()
+    }
+
 }
