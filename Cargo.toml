@@ -10,7 +10,7 @@ categories = ["ui"]
 
 repository = "https://github.com/devfans/wand"
 
-readme = "README.d"
+readme = "README.md"
 license = "GNU-v3"
 
 
