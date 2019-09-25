@@ -1,6 +1,12 @@
 # wand
 Wand is targeted as UI framework for web canvas based web applications.
 
+[![Build Status][travis-image]][travis-url]  [![Crates.io][s2]][ci]
+
+[s2]: https://img.shields.io/crates/v/wand.svg
+[ci]: https://crates.io/crates/wand/
+[travis-image]: https://img.shields.io/travis/devfans/moba-proto/master.svg
+[travis-url]: https://travis-ci.org/devfans/moba-proto
 
 # Get Started
 
