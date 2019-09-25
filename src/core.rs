@@ -11,6 +11,7 @@ use crate::component::*;
 use crate::section::*;
 use crate::container::Container;
 use crate::span::*;
+use crate::utils;
 
 use std::rc::{Weak, Rc};
 
@@ -69,6 +70,7 @@ pub struct Application {
 
 impl Application {
     pub fn new_with_canvas_id(canvas_id: &str) -> Self {
+        utils::set_panic_hook();
         let document = Self::get_document();
         let canvas = document.get_element_by_id(canvas_id).unwrap();
         let canvas: web_sys::HtmlCanvasElement = canvas
@@ -129,6 +131,8 @@ impl Application {
     }
 
     pub fn draw(&self) {
+        // Clear first?
+        self.context.clear_rect(0., 0., self.canvas.width() as f64, self.canvas.height() as f64);
         let scene = self.scenes.get(&self.path).unwrap();
         scene.draw(&self.context);
     }

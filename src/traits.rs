@@ -13,7 +13,7 @@ macro_rules! impl_draw_outline {
     ($type: ty) => {
         impl DrawOutline for $type {
             fn draw_outline(&self, ctx: &web_sys::CanvasRenderingContext2d) {
-                ctx.set_stroke_style(&JsValue::from_str("white"));
+                ctx.set_stroke_style(&JsValue::from_str("#07ce88"));
                 ctx.stroke_rect(self.x, self.y, self.w, self.h);
             }
         }

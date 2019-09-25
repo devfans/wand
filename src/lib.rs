@@ -14,3 +14,5 @@ pub use crate::scene::Scene;
 pub use crate::container::Container;
 pub use crate::section::Section;
 pub use crate::content::Content;
+pub use crate::span::{Span, SpanTrait, TextSpan};
+pub use crate::utils::log;

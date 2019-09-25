@@ -101,7 +101,7 @@ impl Container {
     }
 
     pub fn draw(&self, ctx: &web_sys::CanvasRenderingContext2d) {
-        utils::log(format!("container outline {} {} {} {}", self.left, self.right, self.top, self.bottom).as_str());
+        // utils::log(format!("container outline {} {} {} {}", self.left, self.right, self.top, self.bottom).as_str());
 
         self.draw_outline(ctx);
         for item in self.inventory.iter() {
@@ -110,8 +110,8 @@ impl Container {
     }
 
     pub fn update_cursor(&mut self, w: f64, h: f64) {
-        utils::log(&format!("updating cursor {} {}", w, h));
-        utils::log(&format!(" cursor {} {} {} {}", self.x, self.y, self.right, self.bottom));
+        // utils::log(&format!("updating cursor {} {}", w, h));
+        // utils::log(&format!(" cursor {} {} {} {}", self.x, self.y, self.right, self.bottom));
 
         match self.scroll {
             Scrollable::X => {
@@ -135,7 +135,7 @@ impl Container {
 
             }
         }
-        utils::log(&format!("updated cursor {} {}", self.x, self.y));
+        // utils::log(&format!("updated cursor {} {}", self.x, self.y));
     }
 
     pub fn register(&mut self, item: Content) {

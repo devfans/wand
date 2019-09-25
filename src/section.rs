@@ -91,13 +91,12 @@ impl Section {
     }
     
     fn draw_outline(&self, ctx: &web_sys::CanvasRenderingContext2d) {
-        ctx.set_stroke_style(&JsValue::from_str("white"));
+        ctx.set_stroke_style(&JsValue::from_str("#07ce88"));
         ctx.stroke_rect(self.x, self.y, self.w, self.h);
     }
 
 
     pub fn draw(&self, ctx: &web_sys::CanvasRenderingContext2d) {
-        utils::log(format!("section {} outline {} {} {} {}", &self.name, self.x, self.y, self.w, self.h).as_str());
         self.draw_outline(ctx);
         self.container.draw(ctx);
     }
