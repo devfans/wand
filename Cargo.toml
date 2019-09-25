@@ -6,7 +6,7 @@ edition = "2018"
 description = "Web application UI framework powerered by wasm and canvas 2d"
 exclude = ["examples/*"]
 keywords = ["ui", "web", "canvas", "webassembly"]
-categories = ["ui"]
+categories = ["visualization", "wasm"]
 
 repository = "https://github.com/devfans/wand"
 
