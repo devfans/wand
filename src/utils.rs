@@ -23,15 +23,25 @@ extern "C" {
 #[macro_export]
 macro_rules! console_log {
     ( $( $t:tt )* ) => {
+        crate::utils::log(&format!( $( $t )* ));
+    }
+}
+
+/*
+#[macro_export]
+macro_rules! console_log {
+    ( $( $t:tt )* ) => {
         web_sys::console::log_1(&format!( $( $t )* ).into());
     }
 }
+*/
 
 
 pub fn get_font_with_limit(ctx: &web_sys::CanvasRenderingContext2d, text: &str, size: f64, font: &str) -> String {
     if text.trim().len() < 1 {
         return "".to_string();
     }
+
     let mut px = 5;
     let mut style: String;
     let mut res: Result<web_sys::TextMetrics, JsValue>;

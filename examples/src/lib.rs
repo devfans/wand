@@ -1,5 +1,4 @@
 mod utils;
-use std::any::Any;
 
 use wasm_bindgen::prelude::*;
 use wand;
@@ -92,12 +91,11 @@ impl Application {
         self.app.on_mouse_move(x, y);
         {
             let state = self.app.get_state();
-            let mut state = state.borrow_mut();
-            // let cursor = state.fetch_span::<wand::TextSpan>("cursor").unwrap();
-            let cursor = state.fetch::<wand::span::SpanWeak>("cursor").unwrap().upgrade().unwrap();
+            let state = state.borrow_mut();
+            let cursor = state.fetch_span("cursor").unwrap();
             let mut cursor = cursor.borrow_mut();
             console_log!("Call {}", cursor.get_name());
-            // cursor.as_mut().set_text(&format!("Cursor: x: {}, y: {}", x, y));
+            cursor.as_mut().dispath(Box::new(format!("Cursor: x: {}, y: {}", x, y)));
         }
         self.app.draw();
     }

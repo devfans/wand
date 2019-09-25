@@ -93,20 +93,7 @@ impl Scene {
 
         self.container.on_resize(self.x, self.y, self.w, self.h);
     }
-    
-    pub fn register_section(&mut self, section: &SectionRef) {
-        {
-            let mut state = self.state.borrow_mut();
-            state.register_section(section);
-        }
-
-        self.container.register(Content::Section { section: section.clone() });
-    }
-
-    pub fn add_section(&mut self, section: &SectionRef) {
-        self.container.register(Content::Section { section: section.clone() });
-    }
-
+   
     fn consume_event(&mut self, ev: &mut Event) {
     }
 
@@ -120,5 +107,34 @@ impl Scene {
 
     pub fn on_mouse_move(&mut self, x: f64, y: f64) {
     }
+
+    pub fn register_section(&mut self, section: &SectionRef) {
+        {
+            let mut state = self.state.borrow_mut();
+            state.register_section(section);
+        }
+
+        self.container.register(Content::Section { section: section.clone() });
+    }
+
+    pub fn add_section(&mut self, section: &SectionRef) {
+        self.container.register(Content::Section { section: section.clone() });
+    }
+
+    pub fn register_span<T: 'static + SpanTrait>(&mut self, span: T) {
+        let span = Rc::new(RefCell::new(Box::new(span) as Box<dyn SpanTrait>));
+        {
+            let mut state = self.state.borrow_mut();
+            state.register_span(&span);
+        }
+        self.container.register(Content::Span { span });
+    }
+   
+    pub fn add_span<T: 'static + SpanTrait>(&mut self, span: T) {
+        let span = Box::new(span) as Box<dyn SpanTrait>;
+        self.container.register(Content::Span { span: Rc::new(RefCell::new(span)) });
+    }
+
+
 }
 

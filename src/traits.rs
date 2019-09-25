@@ -3,7 +3,8 @@ use wasm_bindgen::prelude::*;
 use crate::scene::Scene;
 use crate::content::Content;
 use crate::container::Container;
-use crate::section::Section;
+use crate::section::*;
+use crate::span::*;
 
 pub trait DrawOutline {
     fn draw_outline(&self, ctx: &web_sys::CanvasRenderingContext2d);
@@ -43,5 +44,4 @@ impl DrawOutline for Container {
 pub trait ContentResize {
     fn on_resize(&mut self, left: f64, top: f64, right: f64, bottom: f64);
 }
-
 

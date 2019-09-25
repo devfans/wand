@@ -42,8 +42,7 @@ features = [
   'Element',
   'HtmlCanvasElement',
   'Window',
-  'TextMetrics',
-  'console'
+  'TextMetrics'
 ]
 
 [dev-dependencies]

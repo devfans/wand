@@ -22,53 +22,40 @@ pub struct CanvasMeta {
 }
 
 pub struct StateProto {
-    store: HashMap::<String, Box<dyn Any>>
+    // store: HashMap::<String, Box<dyn Any>>
+    sections: HashMap::<String, SectionWeak>,
+    spans: HashMap::<String, SpanWeak>,
 }
 
 impl StateProto {
     pub fn new() -> State {
         Rc::new(RefCell::new(StateProto {
-            store: HashMap::new(),
+            sections: HashMap::new(),
+            spans: HashMap::new(),
         }))
-    }
-
-    pub fn register(&mut self, id: &str, item: Box<dyn Any>) {
-        self.store.insert(id.to_string(), item);
     }
 
     pub fn register_section(&mut self, section: &SectionRef) {
         let item = section.borrow();
-        self.register(&item.name.to_string(), Box::new(Rc::downgrade(section)));
+        self.sections.insert(item.name.to_string(), Rc::downgrade(section));
     }
 
-    pub fn register_span<T: 'static + SpanTrait>(&mut self, span: &Rc<RefCell<Box<T>>>) {
+
+    pub fn register_span(&mut self, span: &SpanRef) {
         let item = span.borrow();
         let item = item.as_ref();
-        self.register(&item.get_name().to_string(), Box::new(Rc::downgrade(span)));
+        self.spans.insert(item.get_name().to_string(), Rc::downgrade(span));
     }
 
-    pub fn fetch<T: 'static + Clone>(&mut self, id: &str) -> Option<T>{
-        if let Some(item) = self.store.remove(id) {
-            match item.downcast::<T>() {
-                Ok(data) => {
-                    self.register(id, Box::new((*data).clone()));
-                    return Some(*data);
-                },
-                Err(e) => console_log!("Failed to downcast for error {:?}", e),
-            }
-        }
-        None
-    }
-
-    pub fn fetch_section(&mut self, name: &str) -> Option<SectionRef> {
-        match self.fetch::<SectionWeak>(name) {
+    pub fn fetch_section(&self, name: &str) -> Option<SectionRef> {
+        match self.sections.get(name) {
             Some(item) => item.upgrade(),
             None => None,
         }
     }
-    
-    pub fn fetch_span<T: 'static + SpanTrait>(&mut self, name: &str) -> Option<Rc<RefCell<Box<T>>>> {
-        match self.fetch::<Weak<RefCell<Box<T>>>>(name) {
+
+    pub fn fetch_span(&self, name: &str) -> Option<SpanRef> {
+        match self.spans.get(name) {
             Some(item) => item.upgrade(),
             None => None,
         }

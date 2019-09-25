@@ -73,21 +73,15 @@ impl Section {
         self.container.register(Content::Section { section: section.clone() });
     }
 
-    pub fn register_span<T>(&mut self, span: T)
-        where T: 'static + SpanTrait
-    {
-        let name = span.get_name().to_string();
+    pub fn register_span<T: 'static + SpanTrait>(&mut self, span: T) {
         let span = Rc::new(RefCell::new(Box::new(span) as Box<dyn SpanTrait>));
-        // let span_ref: Rc<RefCell<Box<dyn SpanTrait>>> = span.clone();
         {
             let mut state = self.state.borrow_mut();
-            // state.register_span::<T>(&span);
-            state.register(&name, Box::new(Rc::downgrade(&span)));
+            state.register_span(&span);
         }
-
         self.container.register(Content::Span { span });
     }
-    
+   
     pub fn add_span<T: 'static + SpanTrait>(&mut self, span: T) {
         let span = Box::new(span) as Box<dyn SpanTrait>;
         self.container.register(Content::Span { span: Rc::new(RefCell::new(span)) });
