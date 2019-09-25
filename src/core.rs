@@ -12,6 +12,7 @@ use crate::section::*;
 use crate::container::Container;
 use crate::span::*;
 use crate::utils;
+use std::any::Any;
 
 use std::rc::{Weak, Rc};
 
@@ -21,35 +22,56 @@ pub struct CanvasMeta {
 }
 
 pub struct StateProto {
-    sections: HashMap<String, SectionWeak>,
-    spans: HashMap<String, SpanWeak>,
+    store: HashMap::<String, Box<dyn Any>>
 }
 
 impl StateProto {
     pub fn new() -> State {
         Rc::new(RefCell::new(StateProto {
-            sections: HashMap::new(),
-            spans: HashMap::new(),
+            store: HashMap::new(),
         }))
+    }
+
+    pub fn register(&mut self, id: &str, item: Box<dyn Any>) {
+        self.store.insert(id.to_string(), item);
     }
 
     pub fn register_section(&mut self, section: &SectionRef) {
         let item = section.borrow();
-        self.sections.insert(item.name.clone(), Rc::downgrade(section));
+        self.register(&item.name.to_string(), Box::new(Rc::downgrade(section)));
     }
 
-    pub fn register_span(&mut self, span: &SpanRef) {
+    pub fn register_span<T: 'static + SpanTrait>(&mut self, span: &Rc<RefCell<Box<T>>>) {
         let item = span.borrow();
         let item = item.as_ref();
-        self.spans.insert(item.get_name().to_string(), Rc::downgrade(span));
+        self.register(&item.get_name().to_string(), Box::new(Rc::downgrade(span)));
     }
 
-    pub fn get_section(&self, name: &str) -> Option<&SectionWeak> {
-        self.sections.get(name)
+    pub fn fetch<T: 'static + Clone>(&mut self, id: &str) -> Option<T>{
+        if let Some(item) = self.store.remove(id) {
+            match item.downcast::<T>() {
+                Ok(data) => {
+                    self.register(id, Box::new((*data).clone()));
+                    return Some(*data);
+                },
+                Err(e) => console_log!("Failed to downcast for error {:?}", e),
+            }
+        }
+        None
     }
 
-    pub fn get_span(&self, name: &str) -> Option<&SpanWeak> {
-        self.spans.get(name)
+    pub fn fetch_section(&mut self, name: &str) -> Option<SectionRef> {
+        match self.fetch::<SectionWeak>(name) {
+            Some(item) => item.upgrade(),
+            None => None,
+        }
+    }
+    
+    pub fn fetch_span<T: 'static + SpanTrait>(&mut self, name: &str) -> Option<Rc<RefCell<Box<T>>>> {
+        match self.fetch::<Weak<RefCell<Box<T>>>>(name) {
+            Some(item) => item.upgrade(),
+            None => None,
+        }
     }
 
 }

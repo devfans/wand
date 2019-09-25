@@ -1,3 +1,4 @@
+#[macro_use]
 use wasm_bindgen::prelude::*;
 use crate::scene::Scene;
 use crate::content::Content;

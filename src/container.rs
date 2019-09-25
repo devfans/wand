@@ -89,7 +89,7 @@ impl Container {
             let h;
             loop {
                 let (width, height, fit) = (*item).on_resize(self.x, self.y, self.right, self.bottom);
-                utils::log(&format!("resize content item: {} {} {} {}, {} {} {}", self.x, self.y, self.right, self.bottom, width, height, fit));
+                console_log!("resize content item: {} {} {} {}, {} {} {}", self.x, self.y, self.right, self.bottom, width, height, fit);
                 if fit {
                     w = width;
                     h = height;

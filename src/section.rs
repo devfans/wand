@@ -1,9 +1,9 @@
 
 use wasm_bindgen::prelude::*;
-use crate::container::*;
-use crate::content::*;
 use crate::traits::*;
 use crate::utils;
+use crate::container::*;
+use crate::content::*;
 use crate::component::*;
 use crate::span::*;
 
@@ -60,7 +60,7 @@ impl Section {
         }))
     }
 
-    pub fn add_section(&mut self, section: &SectionRef) {
+    pub fn register_section(&mut self, section: &SectionRef) {
         {
             let mut state = self.state.borrow_mut();
             state.register_section(section);
@@ -69,19 +69,33 @@ impl Section {
         self.container.register(Content::Section { section: section.clone() });
     }
 
-    pub fn add_span(&mut self, span: Span) {
-        let span = Rc::new(RefCell::new(span));
-        {
-            let mut state = self.state.borrow_mut();
-            state.register_span(&span);
-        }
-
-        self.container.register(Content::Span { span: span });
+    pub fn add_section(&mut self, section: &SectionRef) {
+        self.container.register(Content::Section { section: section.clone() });
     }
 
+    pub fn register_span<T>(&mut self, span: T)
+        where T: 'static + SpanTrait
+    {
+        let name = span.get_name().to_string();
+        let span = Rc::new(RefCell::new(Box::new(span) as Box<dyn SpanTrait>));
+        // let span_ref: Rc<RefCell<Box<dyn SpanTrait>>> = span.clone();
+        {
+            let mut state = self.state.borrow_mut();
+            // state.register_span::<T>(&span);
+            state.register(&name, Box::new(Rc::downgrade(&span)));
+        }
+
+        self.container.register(Content::Span { span });
+    }
+    
+    pub fn add_span<T: 'static + SpanTrait>(&mut self, span: T) {
+        let span = Box::new(span) as Box<dyn SpanTrait>;
+        self.container.register(Content::Span { span: Rc::new(RefCell::new(span)) });
+    }
 
     pub fn on_resize(&mut self, left: f64, top: f64, right: f64, bottom: f64) -> (f64, f64, bool) {
-        utils::log(&format!("Resizing {}", &self.name));
+        // console.log!(&format!("Resizing {}", &self.name));
+        console_log!("Resizing {}", &self.name);
         self.x = left;
         self.y = top;
         self.w = self.width as f64 * (right - left);
@@ -102,7 +116,7 @@ impl Section {
     }
 
     fn consume_event(&mut self, ev: &mut Event) {
-        utils::log(&format!("mouse on {} ", self.name));
+        console_log!("mouse on {} ", self.name);
     }
 
     pub fn dispatch_event(&mut self, ev: &mut Event) {

@@ -11,7 +11,6 @@ pub type SpanRef = Rc<RefCell<Span>>;
 pub type SpanWeak = Weak<RefCell<Span>>;
 
 pub trait SpanTrait {
-    fn set_text(&mut self, text: &str);
     fn get_name(&self) -> &str;
     fn dispatch_event(&mut self, ev: &mut Event);
     fn draw(&self, ctx: &web_sys::CanvasRenderingContext2d);
@@ -37,8 +36,8 @@ pub struct TextSpan {
 }
 
 impl TextSpan {
-    pub fn new(state: State, name: &str, text: &str, width: f32, height: f32) -> Box<Self> {
-        Box::new(Self {
+    pub fn new(state: State, name: &str, text: &str, width: f32, height: f32) -> Self {
+        Self {
             name: name.to_string(),
             text: text.to_string(),
             x: 0.,
@@ -50,14 +49,15 @@ impl TextSpan {
             height,
             state,
             font_cache: RefCell::new(None),
-        })
+        }
+    }
+
+    pub fn set_text(&mut self, text: &str) {
+        self.text = text.to_string();
     }
 }
 
 impl SpanTrait for TextSpan {
-    fn set_text(&mut self, text: &str) {
-        self.text = text.to_string();
-    }
 
     fn get_name(&self) -> &str {
         &self.name
@@ -71,7 +71,7 @@ impl SpanTrait for TextSpan {
         if font.is_none() {
             let style = utils::get_font_with_limit(ctx, &self.text, (self.w * 0.8).min(100.), "Arial");
             if style.is_empty() {
-                utils::log(&format!("Failed to get proper font for the text"));
+                console_log!("Failed to get proper font for the text");
             }
             *font = Some(style);
         }

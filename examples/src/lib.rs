@@ -1,7 +1,8 @@
 mod utils;
+use std::any::Any;
 
-use wand;
 use wasm_bindgen::prelude::*;
+use wand;
 
 // When the `wee_alloc` feature is enabled, use `wee_alloc` as the global
 // allocator.
@@ -29,6 +30,13 @@ pub struct Application {
     app: wand::core::Application,
 }
 
+macro_rules! console_log {
+    ( $( $t:tt )* ) => {
+        wand::log(&format!( $( $t )* ));
+    }
+}
+
+
 #[wasm_bindgen]
 impl Application {
     pub fn new() -> Self {
@@ -43,7 +51,7 @@ impl Application {
         let cursor_span = wand::TextSpan::new(state.clone(), "cursor", "Cursor:(N/A)", 1., 1.);
         {
             let mut section4_mut = section4.borrow_mut();
-            section4_mut.add_span(cursor_span);
+            section4_mut.register_span(cursor_span);
         }
 
         let section5 = app.new_section("section5", 1.,1., 0.2);
@@ -52,6 +60,7 @@ impl Application {
             let mut section5_mut = section5.borrow_mut();
             section5_mut.add_span(span);
         }
+
         {
             let mut sec = section1.borrow_mut();
             sec.add_section(&section3);
@@ -83,10 +92,12 @@ impl Application {
         self.app.on_mouse_move(x, y);
         {
             let state = self.app.get_state();
-            let state = state.borrow();
-            let cursor = state.get_span("cursor").unwrap().upgrade().unwrap();
+            let mut state = state.borrow_mut();
+            // let cursor = state.fetch_span::<wand::TextSpan>("cursor").unwrap();
+            let cursor = state.fetch::<wand::span::SpanWeak>("cursor").unwrap().upgrade().unwrap();
             let mut cursor = cursor.borrow_mut();
-            cursor.as_mut().set_text(&format!("Cursor: x: {}, y: {}", x, y));
+            console_log!("Call {}", cursor.get_name());
+            // cursor.as_mut().set_text(&format!("Cursor: x: {}, y: {}", x, y));
         }
         self.app.draw();
     }

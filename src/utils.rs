@@ -1,3 +1,5 @@
+
+#[macro_use]
 use wasm_bindgen::prelude::*;
 use crate::scene::Scene;
 
@@ -12,18 +14,19 @@ pub fn set_panic_hook() {
     console_error_panic_hook::set_once();
 }
 
-
 #[wasm_bindgen]
 extern "C" {
     #[wasm_bindgen(js_namespace = console)]
     pub fn log(s: &str);
 }
 
-macro_rules! log {
+#[macro_export]
+macro_rules! console_log {
     ( $( $t:tt )* ) => {
         web_sys::console::log_1(&format!( $( $t )* ).into());
     }
 }
+
 
 pub fn get_font_with_limit(ctx: &web_sys::CanvasRenderingContext2d, text: &str, size: f64, font: &str) -> String {
     if text.trim().len() < 1 {
