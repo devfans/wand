@@ -32,7 +32,7 @@ impl Scene {
     pub fn default(state: State) -> Self {
         Self {
             path: String::new(),
-            container: Container::new(0.02, 0.02, 10., 10., 20., 20., Scrollable::None),
+            container: Container::new(0.02, 0.02, 4., 4., 8., 8., Scrollable::None),
 
             x: 0.,
             y: 0.,
@@ -40,10 +40,10 @@ impl Scene {
             w: 0.,
             margin_x: 0.2,
             margin_y: 0.2,
-            margin_min_x: 20.,
-            margin_max_x: 50.,
-            margin_min_y: 20. ,
-            margin_max_y: 50.,
+            margin_min_x: 10.,
+            margin_max_x: 20.,
+            margin_min_y: 10. ,
+            margin_max_y: 20.,
             state,
         }
     }

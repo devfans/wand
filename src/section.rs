@@ -1,7 +1,5 @@
 
 use wasm_bindgen::prelude::*;
-use crate::traits::*;
-use crate::utils;
 use crate::container::*;
 use crate::content::*;
 use crate::component::*;
@@ -35,7 +33,7 @@ impl Section {
     pub fn new(state: State, name: &str, width: f32, height: f32, padding: f32) -> SectionRef {
         Rc::new(RefCell::new(Self {
             name: name.to_string(),
-            container: Container::new(padding, padding, 10., 10., 20., 20., Scrollable::None),
+            container: Container::new(padding, padding, 2., 2., 4., 4., Scrollable::None),
             x: 0.,
             y: 0.,
             w: 0.,
@@ -88,8 +86,8 @@ impl Section {
     }
 
     pub fn on_resize(&mut self, left: f64, top: f64, right: f64, bottom: f64) -> (f64, f64, bool) {
-        // console.log!(&format!("Resizing {}", &self.name));
-        console_log!("Resizing {}", &self.name);
+        // log!(&format!("Resizing {}", &self.name));
+        log!("Resizing {}", &self.name);
         self.x = left;
         self.y = top;
         self.w = self.width as f64 * (right - left);
@@ -110,7 +108,7 @@ impl Section {
     }
 
     fn consume_event(&mut self, ev: &mut Event) {
-        console_log!("mouse on {} ", self.name);
+        log!("mouse on {} ", self.name);
     }
 
     pub fn dispatch_event(&mut self, ev: &mut Event) {

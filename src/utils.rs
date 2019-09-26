@@ -1,7 +1,5 @@
 
-#[macro_use]
 use wasm_bindgen::prelude::*;
-use crate::scene::Scene;
 
 pub fn set_panic_hook() {
     // When the `console_error_panic_hook` feature is enabled, we can call the
@@ -18,24 +16,42 @@ pub fn set_panic_hook() {
 extern "C" {
     #[wasm_bindgen(js_namespace = console)]
     pub fn log(s: &str);
+    pub fn warn(s: &str);
+    pub fn error(s: &str);
+    pub fn debug(s: &str);
+    pub fn info(s: &str);
 }
 
 #[macro_export]
-macro_rules! console_log {
+macro_rules! log {
     ( $( $t:tt )* ) => {
-        crate::utils::log(&format!( $( $t )* ));
+        $crate::utils::log(&format!( $( $t )* ));
     }
 }
-
-/*
 #[macro_export]
-macro_rules! console_log {
+macro_rules! info {
     ( $( $t:tt )* ) => {
-        web_sys::console::log_1(&format!( $( $t )* ).into());
+        $crate::utils::info(&format!( $( $t )* ));
     }
 }
-*/
-
+#[macro_export]
+macro_rules! warn {
+    ( $( $t:tt )* ) => {
+        $crate::utils::warn(&format!( $( $t )* ));
+    }
+}
+#[macro_export]
+macro_rules! error {
+    ( $( $t:tt )* ) => {
+        $crate::utils::error(&format!( $( $t )* ));
+    }
+}
+#[macro_export]
+macro_rules! debug {
+    ( $( $t:tt )* ) => {
+        $crate::utils::debug(&format!( $( $t )* ));
+    }
+}
 
 pub fn get_font_with_limit(ctx: &web_sys::CanvasRenderingContext2d, text: &str, size: f64, font: &str) -> String {
     if text.trim().len() < 1 {

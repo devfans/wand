@@ -1,10 +1,6 @@
-#[macro_use]
 use wasm_bindgen::prelude::*;
 use crate::scene::Scene;
-use crate::content::Content;
 use crate::container::Container;
-use crate::section::*;
-use crate::span::*;
 
 pub trait DrawOutline {
     fn draw_outline(&self, ctx: &web_sys::CanvasRenderingContext2d);

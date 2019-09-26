@@ -1,8 +1,5 @@
-use crate::scene::Scene;
-use wasm_bindgen::prelude::*;
 use crate::traits::*;
 use crate::content::Content;
-use crate::utils;
 use crate::component::*;
 
 #[derive(PartialEq, Eq)]
@@ -89,7 +86,7 @@ impl Container {
             let h;
             loop {
                 let (width, height, fit) = (*item).on_resize(self.x, self.y, self.right, self.bottom);
-                console_log!("resize content item: {} {} {} {}, {} {} {}", self.x, self.y, self.right, self.bottom, width, height, fit);
+                log!("resize content item: {} {} {} {}, {} {} {}", self.x, self.y, self.right, self.bottom, width, height, fit);
                 if fit {
                     w = width;
                     h = height;

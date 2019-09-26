@@ -1,20 +1,17 @@
-use std::cell::{RefCell, Cell};
-
+use std::cell::RefCell;
+use std::rc::Rc;
 use std::collections::HashMap;
 
 use wasm_bindgen::prelude::*;
 use wasm_bindgen::JsCast;
 
 use crate::scene::Scene;
-use crate::traits::*;
 use crate::component::*;
 use crate::section::*;
 use crate::container::Container;
 use crate::span::*;
 use crate::utils;
-use std::any::Any;
 
-use std::rc::{Weak, Rc};
 
 pub struct CanvasMeta {
     pub w: u32,
