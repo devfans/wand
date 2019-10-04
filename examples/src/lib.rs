@@ -1,7 +1,7 @@
 mod utils;
 
 use wasm_bindgen::prelude::*;
-#[macro_use] extern crate wand;
+extern crate wand;
 
 // When the `wee_alloc` feature is enabled, use `wee_alloc` as the global
 // allocator.
@@ -27,6 +27,13 @@ pub fn start() {
 #[wasm_bindgen]
 pub struct Application {
     app: wand::core::Application,
+}
+
+#[macro_export]
+macro_rules! log {
+    ( $( $t:tt )* ) => {
+        wand::utils::log(&format!( $( $t )* ));
+    }
 }
 
 #[wasm_bindgen]
@@ -87,7 +94,7 @@ impl Application {
             let state = state.borrow_mut();
             let cursor = state.fetch_span("cursor").unwrap();
             let mut cursor = cursor.borrow_mut();
-            info!("Call {}", cursor.get_name());
+            log!("Call {}", cursor.get_name());
             cursor.as_mut().dispath(Box::new(format!("Cursor: x: {}, y: {}", x, y)));
         }
         self.app.draw();
