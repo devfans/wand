@@ -7,7 +7,6 @@ use wasm_bindgen::prelude::*;
 use crate::core::State;
 use crate::span::SpanTrait;
 use crate::component::Event;
-use crate::utils;
 use dragon::*;
 
 

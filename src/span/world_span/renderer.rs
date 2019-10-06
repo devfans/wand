@@ -2,7 +2,6 @@ use std::rc::Rc;
 use dragon::ecs::*;
 use dragon::core::*;
 use std::any::Any;
-use std::collections::HashSet;
 use wasm_bindgen::prelude::*;
 
 pub struct RenderingSystem {
@@ -23,35 +22,17 @@ impl RenderingSystem {
 
 impl System for RenderingSystem {
     fn tick(&mut self) {
-        // log!("renderer ticking");
-        let transform_component_id = self.state.get_component_id::<TransformComponent>().unwrap();
-        let camera_component_id = self.state.get_component_id::<CameraComponent>().unwrap();
-        let mesh_component_id = self.state.get_component_id::<MeshComponent>().unwrap();
 
-        // Debugging with random movement
-        /*
-        {
-            let mut c_store = self.state.component_store.borrow_mut();
-            let transforms = c_store.get_mut(&transform_component_id).unwrap();
-            for transform in transforms.values_mut().map(|trans| trans.downcast_mut::<TransformComponent>().unwrap()) {
-                transform.append_rotation(Vector3::x_axis(), 0.02);
-                transform.append_rotation(Vector3::y_axis(), 0.002);
-                transform.append_rotation(Vector3::z_axis(), 0.002);
-            }
-        }
-        */
         let c_store = self.state.component_store.borrow();
         let active_camera = self.state.active_camera.get();
-        let camera = c_store.get(&camera_component_id).unwrap()
-            .get(&active_camera).unwrap()
-            .downcast_ref::<CameraComponent>().unwrap();
-        let meshes = c_store.get(&mesh_component_id).unwrap();
-        let transforms = c_store.get(&transform_component_id).unwrap();
+        let cameras = c_store.get::<CameraComponent>();
+        let camera = cameras.get(&active_camera).unwrap();
+        let meshes = c_store.get::<MeshComponent>();
+        let transforms = c_store.get::<TransformComponent>();
 
 
         for (_entity, mesh, transform) in meshes.iter().filter(|entity| transforms.contains_key(entity.0)).map(|(entity, mesh)| {
-            let transform = transforms.get(entity).unwrap().downcast_ref::<TransformComponent>().unwrap();
-            (entity, mesh.downcast_ref::<MeshComponent>().unwrap(), transform)
+            (entity, mesh, transforms.get(entity).unwrap())
         }) {
             let model = transform.matrix();
             let mut cutter = mesh.breaks.iter();
@@ -119,12 +100,10 @@ impl System for RenderingSystem {
             log!("New viewport set {}", &self.viewport);
 
             // Resize the camera projection
-            let camera_component_id = self.state.get_component_id::<CameraComponent>().unwrap();
-            let mut c_store = self.state.component_store.borrow_mut();
+            let c_store = self.state.component_store.borrow();
+            let mut cameras = c_store.get_mut::<CameraComponent>();
             let active_camera = self.state.active_camera.get();
-            match c_store.get_mut(&camera_component_id).unwrap()
-                .get_mut(&active_camera).unwrap()
-                .downcast_mut::<CameraComponent>().unwrap() {
+            match cameras.get_mut(&active_camera).unwrap() {
                 Camera::Perspective { ref mut projection } => {
                     projection.set_aspect((vp.2 / vp.3) as f32);
                 },
