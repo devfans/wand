@@ -1,3 +1,5 @@
+mod renderer;
+
 use std::cell::RefCell;
 use std::any::Any;
 use wasm_bindgen::prelude::*;
@@ -6,8 +8,10 @@ use crate::core::State;
 use crate::span::SpanTrait;
 use crate::component::Event;
 use crate::utils;
+use dragon::*;
 
-pub struct TextSpan {
+
+pub struct WorldSpan {
     pub name: String,
     text: String,
 
@@ -18,13 +22,27 @@ pub struct TextSpan {
 
     pub width: f32,
     pub height: f32,
+    pub world: World,
 
     state: State,
     font_cache: RefCell<Option<String>>, // Caching proper font for the string
 }
 
-impl TextSpan {
-    pub fn new(state: State, name: &str, text: &str, width: f32, height: f32) -> Self {
+impl WorldSpan {
+    pub fn new(
+        state: State,
+        ctx: web_sys::CanvasRenderingContext2d,
+        name: &str,
+        text: &str,
+        width: f32,
+        height: f32
+    ) -> Self {
+        let world = World::new();
+        world.attach_default_camera();
+
+        let renderer = renderer::RenderingSystem::new(world.state.clone(), ctx);
+        world.state.register_system("renderer", renderer);
+
         Self {
             name: name.to_string(),
             text: text.to_string(),
@@ -35,6 +53,7 @@ impl TextSpan {
 
             width,
             height,
+            world,
             state,
             font_cache: RefCell::new(None),
         }
@@ -43,12 +62,21 @@ impl TextSpan {
     pub fn set_text(&mut self, text: &str) {
         self.text = text.to_string();
     }
+
+    fn draw_outline(&self, ctx: &web_sys::CanvasRenderingContext2d) {
+        ctx.set_stroke_style(&JsValue::from_str("white"));
+        ctx.stroke_rect(self.x, self.y, self.w, self.h);
+    }
+
 }
 
-impl SpanTrait for TextSpan {
+impl SpanTrait for WorldSpan {
 
     fn get_name(&self) -> &str {
         &self.name
+    }
+
+    fn dispatch_event(&mut self, _ev: &mut Event) {
     }
 
     fn dispath(&mut self, data: Box<dyn Any>) {
@@ -57,6 +85,11 @@ impl SpanTrait for TextSpan {
         }
     }
 
+    fn tick(&mut self, _ctx: &web_sys::CanvasRenderingContext2d) {
+        self.world.state.tick();
+    }
+
+    /*
     fn draw(&self, ctx: &web_sys::CanvasRenderingContext2d) {
         let mut font = self.font_cache.borrow_mut();
         if font.is_none() {
@@ -72,6 +105,7 @@ impl SpanTrait for TextSpan {
         }
 
     }
+    */
 
     fn on_resize(&mut self, left: f64, top: f64, right: f64, bottom: f64) -> (f64, f64, bool) {
         self.x = left;
@@ -81,9 +115,14 @@ impl SpanTrait for TextSpan {
         // Clear font cache
         let mut font = self.font_cache.borrow_mut();
         *font = None;
-        (self.w, self.h, true)
+
+        // Resize world rendering system
+        let mut systems = self.world.state.system_store.borrow_mut();
+        let renderer = systems.get_mut("renderer").unwrap();
+        renderer.dispatch(Box::new((self.x, self.y, self.w, self.h)));
+
+        (0., 0., true)
     }
 
 }
-
 

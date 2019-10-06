@@ -83,6 +83,10 @@ impl Scene {
         self.container.draw(ctx);
     }
 
+    pub fn tick(&mut self, ctx: &web_sys::CanvasRenderingContext2d) {
+        self.container.tick(ctx);
+    }
+
     pub fn on_resize(&mut self, meta: &CanvasMeta) {
         let margin_x = (meta.w as f32 * self.margin_x).max(self.margin_min_x).min(self.margin_max_x) as f64;
         let margin_y = (meta.h as f32 * self.margin_y).max(self.margin_min_y).min(self.margin_max_y) as f64;

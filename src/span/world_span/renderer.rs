@@ -1,0 +1,137 @@
+use std::rc::Rc;
+use dragon::ecs::*;
+use dragon::core::*;
+use std::any::Any;
+use std::collections::HashSet;
+use wasm_bindgen::prelude::*;
+
+pub struct RenderingSystem {
+    state: Rc<WorldState>,
+    ctx: web_sys::CanvasRenderingContext2d,
+    viewport: Matrix4<f32>,
+}
+
+impl RenderingSystem {
+    pub fn new(state: Rc<WorldState>, ctx: web_sys::CanvasRenderingContext2d) -> Self {
+        Self {
+            state,
+            ctx,
+            viewport: Matrix4::identity(),
+        }
+    }
+}
+
+impl System for RenderingSystem {
+    fn tick(&mut self) {
+        // log!("renderer ticking");
+        let transform_component_id = self.state.get_component_id::<TransformComponent>().unwrap();
+        let camera_component_id = self.state.get_component_id::<CameraComponent>().unwrap();
+        let mesh_component_id = self.state.get_component_id::<MeshComponent>().unwrap();
+
+        // Debugging with random movement
+        /*
+        {
+            let mut c_store = self.state.component_store.borrow_mut();
+            let transforms = c_store.get_mut(&transform_component_id).unwrap();
+            for transform in transforms.values_mut().map(|trans| trans.downcast_mut::<TransformComponent>().unwrap()) {
+                transform.append_rotation(Vector3::x_axis(), 0.02);
+                transform.append_rotation(Vector3::y_axis(), 0.002);
+                transform.append_rotation(Vector3::z_axis(), 0.002);
+            }
+        }
+        */
+        let c_store = self.state.component_store.borrow();
+        let active_camera = self.state.active_camera.get();
+        let camera = c_store.get(&camera_component_id).unwrap()
+            .get(&active_camera).unwrap()
+            .downcast_ref::<CameraComponent>().unwrap();
+        let meshes = c_store.get(&mesh_component_id).unwrap();
+        let transforms = c_store.get(&transform_component_id).unwrap();
+
+
+        for (_entity, mesh, transform) in meshes.iter().filter(|entity| transforms.contains_key(entity.0)).map(|(entity, mesh)| {
+            let transform = transforms.get(entity).unwrap().downcast_ref::<TransformComponent>().unwrap();
+            (entity, mesh.downcast_ref::<MeshComponent>().unwrap(), transform)
+        }) {
+            let model = transform.matrix();
+            let mut cutter = mesh.breaks.iter();
+            let count = mesh.vertices.len() - 1;
+            let mut cut_at = cutter.next().unwrap_or(&count);
+            // Simplified rendering to canvas 2d context 
+            self.ctx.set_stroke_style(&JsValue::from_str("white"));
+            self.ctx.begin_path();
+            let mut first = true;
+            for (index, vertex) in mesh.vertices.iter().enumerate() {
+                let point = self.viewport.transform_point(&camera.project_point(&model.transform_point(vertex)));
+                if first {
+                    self.ctx.move_to(point.x as f64, point.y as f64);
+                    first = false;
+                } else {
+                    self.ctx.line_to(point.x as f64, point.y as f64);
+                }
+
+                if index == *cut_at {
+                    cut_at = cutter.next().unwrap_or(&count);
+                    self.ctx.stroke();
+                    self.ctx.begin_path();
+                    first = true;
+                }
+            }
+            self.ctx.stroke();
+
+
+            /*
+            let mut lines = Vec::new();
+            let mut line = Vec::new();
+            for (index, vertex) in mesh.vertices.iter().enumerate() {
+                line.push(self.viewport.transform_point(&camera.project_point(&model.transform_point(vertex))));
+                if index == *cut_at {
+                    lines.push(line.clone());
+                    line.clear();
+                    cut_at = cutter.next().unwrap_or(&count);
+                }
+            }
+            self.ctx.set_stroke_style(&JsValue::from_str("white"));
+            for line in lines {
+                self.ctx.begin_path();
+                let mut first = true;
+                for vertex in line {
+                    log!("{}", vertex);
+                    if first {
+                        self.ctx.move_to(vertex.x as f64, vertex.y as f64);
+                        first = false;
+                    } else {
+                        self.ctx.line_to(vertex.x as f64, vertex.y as f64);
+                    }
+                }
+                self.ctx.stroke();
+            }
+            */
+        }
+
+    }
+
+    fn dispatch(&mut self, data: Box<dyn Any>) {
+        if let Ok(vp) = data.downcast::<(f64, f64, f64, f64)>() {
+            self.viewport = Matrix4::new_translation(&Vector3::new(vp.0 as f32, vp.1 as f32, 0.))
+                * Matrix4::new_nonuniform_scaling(&Vector3::new(vp.2 as f32 /2., vp.3 as f32 /2., 1.))
+                * Matrix4::new_translation(&Vector3::new(1., 1., 0.));
+            log!("New viewport set {}", &self.viewport);
+
+            // Resize the camera projection
+            let camera_component_id = self.state.get_component_id::<CameraComponent>().unwrap();
+            let mut c_store = self.state.component_store.borrow_mut();
+            let active_camera = self.state.active_camera.get();
+            match c_store.get_mut(&camera_component_id).unwrap()
+                .get_mut(&active_camera).unwrap()
+                .downcast_mut::<CameraComponent>().unwrap() {
+                Camera::Perspective { ref mut projection } => {
+                    projection.set_aspect((vp.2 / vp.3) as f32);
+                },
+                _ => {}
+            }
+        }
+    }
+
+}
+

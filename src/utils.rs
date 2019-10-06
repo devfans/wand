@@ -1,4 +1,4 @@
-
+use std::time::{SystemTime, UNIX_EPOCH};
 use wasm_bindgen::prelude::*;
 
 pub fn set_panic_hook() {
@@ -53,12 +53,12 @@ macro_rules! debug {
     }
 }
 
-pub fn get_font_with_limit(ctx: &web_sys::CanvasRenderingContext2d, text: &str, size: f64, font: &str) -> String {
+pub fn get_font_with_limit(ctx: &web_sys::CanvasRenderingContext2d, text: &str, size: f64, font: &str) -> u32 {
+    let mut px = 5;
     if text.trim().len() < 1 {
-        return "".to_string();
+        return px;
     }
 
-    let mut px = 5;
     let mut style: String;
     let mut res: Result<web_sys::TextMetrics, JsValue>;
     for _ in 0..1000 {
@@ -66,9 +66,22 @@ pub fn get_font_with_limit(ctx: &web_sys::CanvasRenderingContext2d, text: &str, 
         ctx.set_font(&style);
         res = ctx.measure_text(text);
         if res.unwrap().width() >= size {
-            return style;
+            return px;
         }
         px += 2;
     }
-    "".to_string()
+    px
 }
+
+#[allow(dead_code)]
+#[inline]
+pub fn now_ms() -> u128 {
+    web_sys::window().unwrap().performance().unwrap().now() as u128
+    /*
+    let now = web_sys::window().unwrap().performance().unwrap().now();
+    let secs = now as u64 / 1000;
+    let nanos = (now as u32 % 1000) * 1000000;
+    SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_millis()
+    */
+}
+

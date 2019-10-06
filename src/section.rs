@@ -107,6 +107,10 @@ impl Section {
         self.container.draw(ctx);
     }
 
+    pub fn tick(&mut self, ctx: &web_sys::CanvasRenderingContext2d) {
+        self.container.tick(ctx);
+    }
+
     fn consume_event(&mut self, ev: &mut Event) {
         log!("mouse on {} ", self.name);
     }

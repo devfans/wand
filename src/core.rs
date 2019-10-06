@@ -11,6 +11,7 @@ use crate::section::*;
 use crate::container::Container;
 use crate::span::*;
 use crate::utils;
+use crate::input::*;
 
 
 pub struct CanvasMeta {
@@ -61,6 +62,27 @@ impl StateProto {
 }
 
 pub type State = Rc<RefCell<StateProto>>;
+pub type FpsCounter = Rc<RefCell<FpsCounterProto>>;
+pub struct FpsCounterProto(u8, u8, u128, u32); // (ticks, interval, tsp, fps)
+impl FpsCounterProto {
+    pub fn new(interval: u8) -> FpsCounter {
+        Rc::new(RefCell::new(Self(0, interval, utils::now_ms(), 0)))
+    }
+
+    pub fn tick(&mut self) {
+        self.0 += 1;
+        if self.0 >= self.1 {
+            let now = utils::now_ms();
+            self.3 = 1000 * self.1 as u32 / (now - self.2) as u32;
+            self.2 = now;
+            self.0 = 0;
+        }
+    }
+
+    pub fn get(&self) -> u32 {
+        self.3
+    }
+}
 
 pub struct Application {
     document: web_sys::Document,
@@ -68,10 +90,13 @@ pub struct Application {
 
     scenes: HashMap<String, Scene>,
     path: String,
-    context: web_sys::CanvasRenderingContext2d, 
+    pub context: web_sys::CanvasRenderingContext2d, 
     meta: CanvasMeta,
 
     state: State,
+    pub input: Input,
+
+    pub counter: FpsCounter,
 }
 
 impl Application {
@@ -104,6 +129,8 @@ impl Application {
             context,
             meta,
             state,
+            input: InputProto::new(),
+            counter: FpsCounterProto::new(10),
         };
         app.update_canvas_meta();
         app.on_resize();
@@ -143,6 +170,14 @@ impl Application {
         scene.draw(&self.context);
     }
 
+    pub fn tick(&mut self) {
+        self.draw();
+        for scene in self.scenes.values_mut() {
+            scene.tick(&self.context);
+        }
+        self.counter.borrow_mut().tick();
+    }
+
     fn run(&self) {
     }
 
@@ -169,6 +204,13 @@ impl Application {
         scene.dispatch_event(&mut ev);
     }
 
+    pub fn on_keydown(&self, key: &str) {
+        self.input.borrow_mut().on_keydown(key);
+    }
+
+    pub fn on_keyup(&self, key: &str) {
+        self.input.borrow_mut().on_keyup(key);
+    }
 
     pub fn new_section(&self, name: &str, width: f32, height: f32, padding: f32) -> SectionRef {
         Section::new(self.state.clone(), name, width, height, padding)
@@ -180,6 +222,10 @@ impl Application {
 
     pub fn get_state(&self) -> State {
         self.state.clone()
+    }
+
+    pub fn get_fps(&self) -> u32 {
+        self.counter.borrow().get()
     }
 
 }

@@ -106,6 +106,13 @@ impl Container {
         }
     }
 
+    pub fn tick(&mut self, ctx: &web_sys::CanvasRenderingContext2d) {
+        for item in self.inventory.iter_mut() {
+            item.tick(ctx);
+        }
+    }
+
+
     pub fn update_cursor(&mut self, w: f64, h: f64) {
         // utils::log(&format!("updating cursor {} {}", w, h));
         // utils::log(&format!(" cursor {} {} {} {}", self.x, self.y, self.right, self.bottom));

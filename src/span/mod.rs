@@ -9,9 +9,10 @@ pub type SpanWeak = Weak<RefCell<Span>>;
 
 pub trait SpanTrait {
     fn get_name(&self) -> &str;
-    fn dispatch_event(&mut self, ev: &mut Event);
-    fn dispath(&mut self, data: Box<dyn Any>);
-    fn draw(&self, ctx: &web_sys::CanvasRenderingContext2d);
+    fn dispatch_event(&mut self, _ev: &mut Event) {}
+    fn dispath(&mut self, _data: Box<dyn Any>) {}
+    fn draw(&self, _ctx: &web_sys::CanvasRenderingContext2d) {}
+    fn tick(&mut self, _ctx: &web_sys::CanvasRenderingContext2d) {}
     fn on_resize(&mut self, left: f64, top: f64, right: f64, bottom: f64) -> (f64, f64, bool);
 }
 
@@ -19,10 +20,12 @@ pub trait SpanTrait {
 pub type Span = Box<dyn SpanTrait>;
 
 mod text_span;
+mod world_span;
 
 
 pub use self::{
-    text_span::TextSpan
+    text_span::TextSpan,
+    world_span::WorldSpan,
 };
 
 

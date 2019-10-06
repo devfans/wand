@@ -47,6 +47,18 @@ impl Content {
 
     }
 
+    pub fn tick(&mut self, ctx: &web_sys::CanvasRenderingContext2d) {
+        match self {
+            Content::Section { ref mut section } => {
+                let mut section = section.borrow_mut();
+                section.tick(ctx);
+            },
+            Content::Span { ref mut span } => {
+                let mut span = span.borrow_mut();
+                span.tick(ctx);
+            }
+        }
+    }
 
     pub fn dispatch_event(&mut self, ev: &mut Event) {
         match self {
