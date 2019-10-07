@@ -34,31 +34,36 @@ impl System for RenderingSystem {
         for (_entity, mesh, transform) in meshes.iter().filter(|entity| transforms.contains_key(entity.0)).map(|(entity, mesh)| {
             (entity, mesh, transforms.get(entity).unwrap())
         }) {
-            let model = transform.matrix();
-            let mut cutter = mesh.breaks.iter();
-            let count = mesh.vertices.len() - 1;
-            let mut cut_at = cutter.next().unwrap_or(&count);
-            // Simplified rendering to canvas 2d context 
-            self.ctx.set_stroke_style(&JsValue::from_str("white"));
-            self.ctx.begin_path();
-            let mut first = true;
-            for (index, vertex) in mesh.vertices.iter().enumerate() {
-                let point = self.viewport.transform_point(&camera.project_point(&model.transform_point(vertex)));
-                if first {
-                    self.ctx.move_to(point.x as f64, point.y as f64);
-                    first = false;
-                } else {
-                    self.ctx.line_to(point.x as f64, point.y as f64);
-                }
-
-                if index == *cut_at {
-                    cut_at = cutter.next().unwrap_or(&count);
-                    self.ctx.stroke();
+            match mesh.cook() {
+                MeshRecipe::Basic { data } => {
+                    let model = transform.matrix();
+                    let mut cutter = data.breaks.iter();
+                    let count = data.vertices.len() - 1;
+                    let mut cut_at = cutter.next().unwrap_or(&count);
+                    // Simplified rendering to canvas 2d context 
+                    self.ctx.set_stroke_style(&JsValue::from_str("white"));
                     self.ctx.begin_path();
-                    first = true;
-                }
+                    let mut first = true;
+                    for (index, vertex) in data.vertices.iter().enumerate() {
+                        let point = self.viewport.transform_point(&camera.project_point(&model.transform_point(vertex)));
+                        if first {
+                            self.ctx.move_to(point.x as f64, point.y as f64);
+                            first = false;
+                        } else {
+                            self.ctx.line_to(point.x as f64, point.y as f64);
+                        }
+
+                        if index == *cut_at {
+                            cut_at = cutter.next().unwrap_or(&count);
+                            self.ctx.stroke();
+                            self.ctx.begin_path();
+                            first = true;
+                        }
+                    }
+                    self.ctx.stroke();
+                },
+                _ => {}
             }
-            self.ctx.stroke();
 
 
             /*
