@@ -2,6 +2,7 @@ use std::rc::Rc;
 use dragon::ecs::*;
 use dragon::core::*;
 use std::any::Any;
+use std::cmp::PartialOrd;
 use wasm_bindgen::prelude::*;
 
 pub struct RenderingSystem {
@@ -29,14 +30,23 @@ impl System for RenderingSystem {
         let camera = cameras.get(&active_camera).unwrap();
         let meshes = c_store.get::<MeshComponent>();
         let transforms = c_store.get::<TransformComponent>();
+        macro_rules! project {
+            ($point: expr) => {
+                self.viewport.transform_point(&camera.project_point($point))
+            };
+            ($point: expr, $model: expr) => {
+                self.viewport.transform_point(&camera.project_point(&$model.transform_point($point)))
+            }
 
-
-        for (_entity, mesh, transform) in meshes.iter().filter(|entity| transforms.contains_key(entity.0)).map(|(entity, mesh)| {
-            (entity, mesh, transforms.get(entity).unwrap())
+        }
+       
+        let mut polygons = Vec::new();
+        for (mesh, transform) in meshes.iter().filter(|entity| transforms.contains_key(entity.0)).map(|(entity, mesh)| {
+            (mesh, transforms.get(entity).unwrap())
         }) {
+            let model = transform.matrix();
             match mesh.cook() {
                 MeshRecipe::Basic { data } => {
-                    let model = transform.matrix();
                     let mut cutter = data.breaks.iter();
                     let count = data.vertices.len() - 1;
                     let mut cut_at = cutter.next().unwrap_or(&count);
@@ -45,7 +55,7 @@ impl System for RenderingSystem {
                     self.ctx.begin_path();
                     let mut first = true;
                     for (index, vertex) in data.vertices.iter().enumerate() {
-                        let point = self.viewport.transform_point(&camera.project_point(&model.transform_point(vertex)));
+                        let point = project!(vertex, &model);
                         if first {
                             self.ctx.move_to(point.x as f64, point.y as f64);
                             first = false;
@@ -55,16 +65,39 @@ impl System for RenderingSystem {
 
                         if index == *cut_at {
                             cut_at = cutter.next().unwrap_or(&count);
-                            self.ctx.stroke();
-                            self.ctx.begin_path();
                             first = true;
                         }
                     }
                     self.ctx.stroke();
                 },
-                _ => {}
+                MeshRecipe::Simple { data } => {
+                    for i in data.polygons.iter() {
+                        let v1 = project!(&data.vertices[i.0], &model);
+                        let v2 = project!(&data.vertices[i.1], &model);
+                        let v3 = project!(&data.vertices[i.2], &model);
+                        polygons.push((
+                            ((v1.coords + v2.coords + v3.coords)/3.).z,
+                            v1, v2, v3,
+                            i.3.clone()
+                        ));
+
+                    }
+                }
             }
 
+            // Render polygons
+            polygons.sort_unstable_by(|a, b| a.0.partial_cmp(&b.0).unwrap());
+            for p in polygons.iter().rev() {
+                self.ctx.begin_path();
+                self.ctx.set_fill_style(&JsValue::from_str(&p.4));
+                self.ctx.set_stroke_style(&JsValue::from_str(&p.4));
+                self.ctx.move_to(p.1.x as f64, p.1.y as f64);
+                self.ctx.line_to(p.2.x as f64, p.2.y as f64);
+                self.ctx.line_to(p.3.x as f64, p.3.y as f64);
+                self.ctx.line_to(p.1.x as f64, p.1.y as f64);
+                self.ctx.stroke();
+                self.ctx.fill();
+            }
 
             /*
             let mut lines = Vec::new();
