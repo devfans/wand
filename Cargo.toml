@@ -1,6 +1,6 @@
 [package]
 name = "wand"
-version = "0.1.1"
+version = "0.1.2"
 authors = ["devfans <stefanliu@outlook.com>"]
 edition = "2018"
 description = "Web application UI framework powerered by wasm and canvas 2d"
