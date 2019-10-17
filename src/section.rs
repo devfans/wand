@@ -25,6 +25,7 @@ pub struct Section {
 
     pub width: f32,
     pub height: f32,
+    pub order: u8,
 
     state: State
 }
@@ -40,6 +41,7 @@ impl Section {
             h: 0.,
             width,
             height,
+            order: 0,
             state,
         }))
     }
@@ -54,6 +56,7 @@ impl Section {
             h: 0.,
             width,
             height,
+            order: 0,
             state
         }))
     }
@@ -121,8 +124,6 @@ impl Section {
             self.consume_event(ev);
         }
     }
-
-
 }
 
 

@@ -113,7 +113,7 @@ impl Container {
     }
 
 
-    pub fn update_cursor(&mut self, w: f64, h: f64) {
+    fn update_cursor(&mut self, w: f64, h: f64) {
         // utils::log(&format!("updating cursor {} {}", w, h));
         // utils::log(&format!(" cursor {} {} {} {}", self.x, self.y, self.right, self.bottom));
 
@@ -144,6 +144,8 @@ impl Container {
 
     pub fn register(&mut self, item: Content) {
         self.inventory.push(item);
+        self.inventory.sort_by_key(|i| i.get_order_value());
+        self.inventory.reverse();
     }
 
     fn consume_event(&mut self, ev: &mut Event) {

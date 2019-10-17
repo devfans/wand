@@ -60,6 +60,17 @@ impl Content {
         }
     }
 
+    pub fn get_order_value(&self) -> u8 {
+        match self {
+            Content::Section { ref section } => {
+                section.borrow().order
+            },
+            Content::Span { ref span } => {
+                span.borrow().get_order()
+            }
+        }
+    }
+
     pub fn dispatch_event(&mut self, ev: &mut Event) {
         match self {
             Content::Section { ref section } => {

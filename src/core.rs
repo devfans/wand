@@ -171,11 +171,11 @@ impl Application {
     }
 
     pub fn tick(&mut self) {
-        self.draw();
         for scene in self.scenes.values_mut() {
             scene.tick(&self.context);
         }
         self.counter.borrow_mut().tick();
+        self.draw();
     }
 
     fn run(&self) {
