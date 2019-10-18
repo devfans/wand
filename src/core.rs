@@ -163,19 +163,24 @@ impl Application {
             .expect("Failed to register `requestAnimationFrame`");
     }
 
-    pub fn draw(&self) {
+    pub fn render_tick(&self) {
         // Clear first?
         self.context.clear_rect(0., 0., self.canvas.width() as f64, self.canvas.height() as f64);
         let scene = self.scenes.get(&self.path).unwrap();
-        scene.draw(&self.context);
+        scene.render_tick(&self.context);
     }
 
     pub fn tick(&mut self) {
         for scene in self.scenes.values_mut() {
-            scene.tick(&self.context);
+            scene.tick();
         }
         self.counter.borrow_mut().tick();
-        self.draw();
+        self.render_tick();
+    }
+
+    /// Deprecated
+    pub fn draw(&self) {
+        self.render_tick();
     }
 
     fn run(&self) {

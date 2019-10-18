@@ -97,6 +97,7 @@ impl Container {
         }
     }
 
+    /// Deprecated
     pub fn draw(&self, ctx: &web_sys::CanvasRenderingContext2d) {
         // utils::log(format!("container outline {} {} {} {}", self.left, self.right, self.top, self.bottom).as_str());
 
@@ -106,9 +107,16 @@ impl Container {
         }
     }
 
-    pub fn tick(&mut self, ctx: &web_sys::CanvasRenderingContext2d) {
+    pub fn render_tick(&self, ctx: &web_sys::CanvasRenderingContext2d) {
+        self.draw_outline(ctx);
+        for item in self.inventory.iter() {
+            item.render_tick(ctx);
+        }
+    }
+
+    pub fn tick(&mut self) {
         for item in self.inventory.iter_mut() {
-            item.tick(ctx);
+            item.tick();
         }
     }
 
@@ -145,10 +153,9 @@ impl Container {
     pub fn register(&mut self, item: Content) {
         self.inventory.push(item);
         self.inventory.sort_by_key(|i| i.get_order_value());
-        self.inventory.reverse();
     }
 
-    fn consume_event(&mut self, ev: &mut Event) {
+    fn consume_event(&mut self, _ev: &mut Event) {
     }
 
     pub fn dispatch_event(&mut self, ev: &mut Event) {

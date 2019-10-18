@@ -33,6 +33,8 @@ impl Content {
             }
         }
     }
+
+    /// Deprecated
     pub fn draw(&self, ctx: &web_sys::CanvasRenderingContext2d) {
         match self {
             Content::Section { ref section } => {
@@ -47,15 +49,28 @@ impl Content {
 
     }
 
-    pub fn tick(&mut self, ctx: &web_sys::CanvasRenderingContext2d) {
+    pub fn render_tick(&self, ctx: &web_sys::CanvasRenderingContext2d) {
+        match self {
+            Content::Section { ref section } => {
+                let section = section.borrow();
+                section.render_tick(ctx);
+            },
+            Content::Span { ref span } => {
+                let span = span.borrow();
+                span.render_tick(ctx);
+            }
+        }
+    }
+
+    pub fn tick(&mut self) {
         match self {
             Content::Section { ref mut section } => {
                 let mut section = section.borrow_mut();
-                section.tick(ctx);
+                section.tick();
             },
             Content::Span { ref mut span } => {
                 let mut span = span.borrow_mut();
-                span.tick(ctx);
+                span.tick();
             }
         }
     }

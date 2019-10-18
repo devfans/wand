@@ -104,14 +104,19 @@ impl Section {
         ctx.stroke_rect(self.x, self.y, self.w, self.h);
     }
 
-
+    /// Deprecated
     pub fn draw(&self, ctx: &web_sys::CanvasRenderingContext2d) {
         self.draw_outline(ctx);
         self.container.draw(ctx);
     }
 
-    pub fn tick(&mut self, ctx: &web_sys::CanvasRenderingContext2d) {
-        self.container.tick(ctx);
+    pub fn render_tick(&self, ctx: &web_sys::CanvasRenderingContext2d) {
+        self.draw_outline(ctx);
+        self.container.render_tick(ctx);
+    }
+
+    pub fn tick(&mut self) {
+        self.container.tick();
     }
 
     fn consume_event(&mut self, ev: &mut Event) {

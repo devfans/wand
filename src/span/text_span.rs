@@ -57,7 +57,12 @@ impl SpanTrait for TextSpan {
         }
     }
 
+    /// Deprecated
     fn draw(&self, ctx: &web_sys::CanvasRenderingContext2d) {
+        self.render_tick(ctx);
+    }
+
+    fn render_tick(&self, ctx: &web_sys::CanvasRenderingContext2d) {
         let mut font = self.font_cache.borrow_mut();
         if font.is_none() {
             let size = utils::get_font_with_limit(ctx, &self.text, (self.w * 0.8).min(100.), "Arial").min(20).max(10);

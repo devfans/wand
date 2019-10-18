@@ -77,14 +77,18 @@ impl Scene {
     }
 
 
+    /// Deprecated
     pub fn draw(&self, ctx: &web_sys::CanvasRenderingContext2d) {
-        self.draw_outline(ctx);
-
         self.container.draw(ctx);
     }
 
-    pub fn tick(&mut self, ctx: &web_sys::CanvasRenderingContext2d) {
-        self.container.tick(ctx);
+    pub fn render_tick(&self, ctx: &web_sys::CanvasRenderingContext2d) {
+        self.draw_outline(ctx);
+        self.container.render_tick(ctx);
+    }
+    
+    pub fn tick(&mut self) {
+        self.container.tick();
     }
 
     pub fn on_resize(&mut self, meta: &CanvasMeta) {
@@ -98,7 +102,7 @@ impl Scene {
         self.container.on_resize(self.x, self.y, self.w, self.h);
     }
    
-    fn consume_event(&mut self, ev: &mut Event) {
+    fn consume_event(&mut self, _ev: &mut Event) {
     }
 
     pub fn dispatch_event(&mut self, ev: &mut Event) {

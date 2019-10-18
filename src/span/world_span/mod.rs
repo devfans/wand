@@ -40,7 +40,7 @@ impl WorldSpan {
         world.attach_default_camera();
 
         let renderer = renderer::RenderingSystem::new(world.state.clone(), ctx);
-        world.state.register_system("renderer", renderer);
+        world.state.register_renderer("renderer", renderer);
 
         Self {
             name: name.to_string(),
@@ -84,7 +84,11 @@ impl SpanTrait for WorldSpan {
         }
     }
 
-    fn tick(&mut self, _ctx: &web_sys::CanvasRenderingContext2d) {
+    fn render_tick(&self, _ctx: &web_sys::CanvasRenderingContext2d) {
+        self.world.state.render_tick();
+    }
+    
+    fn tick(&mut self) {
         self.world.state.tick();
     }
 
@@ -116,10 +120,9 @@ impl SpanTrait for WorldSpan {
         *font = None;
 
         // Resize world rendering system
-        let mut systems = self.world.state.system_store.borrow_mut();
+        let mut systems = self.world.state.renderer_store.borrow_mut();
         let renderer = systems.get_mut("renderer").unwrap();
         renderer.dispatch(Box::new((self.x, self.y, self.w, self.h)));
-
         (0., 0., true)
     }
 
