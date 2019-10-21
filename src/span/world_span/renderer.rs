@@ -32,12 +32,22 @@ impl System for RenderingSystem {
         let camera = cameras.get(&active_camera).unwrap();
         let meshes = c_store.get::<MeshComponent>();
         let transforms = c_store.get::<TransformComponent>();
-        macro_rules! project {
+        let camera_transform = transforms.get(&active_camera).unwrap().matrix();
+        macro_rules! project_without_camera_transform {
             ($point: expr) => {
                 self.viewport.transform_point(&camera.project_point($point))
             };
             ($point: expr, $model: expr) => {
                 self.viewport.transform_point(&camera.project_point(&$model.transform_point($point)))
+            }
+        }
+
+        macro_rules! project {
+            ($point: expr) => {
+                self.viewport.transform_point(&camera.project_point(&camera_transform.transform_point($point)))
+            };
+            ($point: expr, $model: expr) => {
+                self.viewport.transform_point(&camera.project_point(&((camera_transform * $model).transform_point($point))))
             }
         }
 
@@ -222,9 +232,9 @@ impl System for RenderingSystem {
             flip_xy.row_mut(0)[0] = -1.;
             flip_xy.row_mut(1)[1] = -1.;
 
-            self.viewport = Matrix4::new_translation(&Vector3::new((vp.0 + vp.2) as f32, (vp.1 + vp.3) as f32, 0.))
-                * flip_xy
-            // self.viewport = Matrix4::new_translation(&Vector3::new(vp.0 as f32, vp.1 as f32, 0.))
+            // self.viewport = Matrix4::new_translation(&Vector3::new((vp.0 + vp.2) as f32, (vp.1 + vp.3) as f32, 0.))
+            //    * flip_xy
+            self.viewport = Matrix4::new_translation(&Vector3::new(vp.0 as f32, vp.1 as f32, 0.))
                 * Matrix4::new_nonuniform_scaling(&Vector3::new(vp.2 as f32 /2., vp.3 as f32 /2., 1.))
                 * Matrix4::new_translation(&Vector3::new(1., 1., 0.));
             log!("New viewport set {}", &self.viewport);
