@@ -3,6 +3,7 @@ use dragon::ecs::*;
 use dragon::core::*;
 use std::any::Any;
 use std::cmp::PartialOrd;
+use std::f64::consts::PI;
 use wasm_bindgen::prelude::*;
 
 pub struct RenderingSystem {
@@ -25,6 +26,7 @@ impl System for RenderingSystem {
     fn tick(&mut self) {
 
         let c_store = self.state.component_store.borrow();
+        let shape_store = self.state.shape_store.borrow();
         let active_camera = self.state.active_camera.get();
         let cameras = c_store.get::<CameraComponent>();
         let camera = cameras.get(&active_camera).unwrap();
@@ -37,14 +39,21 @@ impl System for RenderingSystem {
             ($point: expr, $model: expr) => {
                 self.viewport.transform_point(&camera.project_point(&$model.transform_point($point)))
             }
-
         }
+
+        macro_rules! project_radius {
+            ($radius: expr, $model: expr) => {
+                project!(&($model + Vector3::new(0., $radius, 0.))).y - project!($model).y
+            }
+        }
+
        
         let mut polygons = Vec::new();
         for (mesh, transform) in meshes.iter().filter(|entity| transforms.contains_key(entity.0)).map(|(entity, mesh)| {
             (mesh, transforms.get(entity).unwrap())
         }) {
             let model = transform.matrix();
+            let translation = Point3::from(*transform.translation());
             match mesh.cook() {
                 MeshRecipe::Basic { data } => {
                     let mut cutter = data.breaks.iter();
@@ -83,6 +92,56 @@ impl System for RenderingSystem {
 
                     }
                 }
+                MeshRecipe::Complex { data } => {
+                    for brush in data.brushes.iter() {
+                        match brush {
+                            Brush::Lines { stroke, fill, vertices, action } => {
+                                if let Some(stroke) = stroke {
+                                    self.ctx.set_stroke_style(&JsValue::from_str(&stroke));
+                                }
+                                if let Some(fill) = fill {
+                                    self.ctx.set_fill_style(&JsValue::from_str(&fill));
+                                }
+                                self.ctx.begin_path();
+                                let mut first = true;
+                                for vertex in vertices.iter() {
+                                    let point = project!(vertex, &model);
+                                    if first {
+                                        self.ctx.move_to(point.x as f64, point.y as f64);
+                                        first = false;
+                                    } else {
+                                        self.ctx.line_to(point.x as f64, point.y as f64);
+                                    }
+                                }
+                                if action & 0x01 > 0 {
+                                    self.ctx.fill();
+                                }
+                                if action & 0x02 > 0 {
+                                    self.ctx.stroke();
+                                }
+                            },
+                            Brush::Sphere { stroke, fill, center, radius, action } => {
+                                if let Some(stroke) = stroke {
+                                    self.ctx.set_stroke_style(&JsValue::from_str(&stroke));
+                                }
+                                if let Some(fill) = fill {
+                                    self.ctx.set_fill_style(&JsValue::from_str(&fill));
+                                }
+                                self.ctx.begin_path();
+                                let point = project!(center, &model);
+                                let radius = project_radius!(*radius, &translation);
+                                let _ = self.ctx.arc(point.x as f64, point.y as f64, radius as f64, 0., PI*2.);
+                                if action & 0x01 > 0 {
+                                    self.ctx.fill();
+                                }
+                                if action & 0x02 > 0 {
+                                    self.ctx.stroke();
+                                }
+                            }
+                            _ => {},
+                        }
+                    }
+                }
             }
 
             // Render polygons
@@ -97,6 +156,33 @@ impl System for RenderingSystem {
                 self.ctx.line_to(p.1.x as f64, p.1.y as f64);
                 self.ctx.stroke();
                 self.ctx.fill();
+            }
+
+            // Render shapes
+            for shape in shape_store.iter() {
+                self.ctx.set_stroke_style(&JsValue::from_str("white"));
+                match shape {
+                    Shape::Line { begin, end } => {
+                        let begin = project!(begin);
+                        let end = project!(end);
+                        self.ctx.begin_path();
+                        self.ctx.move_to(begin.x as f64, begin.y as f64);
+                        self.ctx.line_to(end.x as f64, end.y as f64);
+                        self.ctx.stroke();
+                    },
+                    Shape::Circle { center, radius } => {
+                        let center = project!(&Point3::from(*center.translation()));
+                        self.ctx.begin_path();
+                        let _ = self.ctx.ellipse(
+                            center.x as f64,
+                            center.y as f64,
+                            *radius as f64,
+                            *radius as f64,
+                            0., 0., PI * 2.);
+                        self.ctx.stroke();
+                    },
+                    _ => {},
+                }
             }
 
             /*
