@@ -129,7 +129,7 @@ impl System for RenderingSystem {
                                 }
                                 self.ctx.begin_path();
                                 let point = project!(center, &model);
-                                let radius = project_radius!(*radius, &translation);
+                                let radius = project_radius!(-*radius, &translation);
                                 let _ = self.ctx.arc(point.x as f64, point.y as f64, radius as f64, 0., PI*2.);
                                 if action & 0x01 > 0 {
                                     self.ctx.fill();
@@ -218,7 +218,13 @@ impl System for RenderingSystem {
 
     fn dispatch(&mut self, data: Box<dyn Any>) {
         if let Ok(vp) = data.downcast::<(f64, f64, f64, f64)>() {
-            self.viewport = Matrix4::new_translation(&Vector3::new(vp.0 as f32, vp.1 as f32, 0.))
+            let mut flip_xy = Matrix4::identity();
+            flip_xy.row_mut(0)[0] = -1.;
+            flip_xy.row_mut(1)[1] = -1.;
+
+            self.viewport = Matrix4::new_translation(&Vector3::new((vp.0 + vp.2) as f32, (vp.1 + vp.3) as f32, 0.))
+                * flip_xy
+            // self.viewport = Matrix4::new_translation(&Vector3::new(vp.0 as f32, vp.1 as f32, 0.))
                 * Matrix4::new_nonuniform_scaling(&Vector3::new(vp.2 as f32 /2., vp.3 as f32 /2., 1.))
                 * Matrix4::new_translation(&Vector3::new(1., 1., 0.));
             log!("New viewport set {}", &self.viewport);
