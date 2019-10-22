@@ -33,7 +33,7 @@ impl System for RenderingSystem {
         let meshes = c_store.get::<MeshComponent>();
         let transforms = c_store.get::<TransformComponent>();
         let camera_transform = transforms.get(&active_camera).unwrap().matrix();
-        macro_rules! project_without_camera_transform {
+        macro_rules! projects {
             ($point: expr) => {
                 self.viewport.transform_point(&camera.project_point($point))
             };
@@ -228,13 +228,11 @@ impl System for RenderingSystem {
 
     fn dispatch(&mut self, data: Box<dyn Any>) {
         if let Ok(vp) = data.downcast::<(f64, f64, f64, f64)>() {
-            let mut flip_xy = Matrix4::identity();
-            flip_xy.row_mut(0)[0] = -1.;
-            flip_xy.row_mut(1)[1] = -1.;
+            let mut flip_y = Matrix4::identity();
+            flip_y.row_mut(1)[1] = -1.;
 
-            // self.viewport = Matrix4::new_translation(&Vector3::new((vp.0 + vp.2) as f32, (vp.1 + vp.3) as f32, 0.))
-            //    * flip_xy
-            self.viewport = Matrix4::new_translation(&Vector3::new(vp.0 as f32, vp.1 as f32, 0.))
+            self.viewport = Matrix4::new_translation(&Vector3::new(vp.0 as f32, (vp.1 + vp.3) as f32, 0.))
+                * flip_y
                 * Matrix4::new_nonuniform_scaling(&Vector3::new(vp.2 as f32 /2., vp.3 as f32 /2., 1.))
                 * Matrix4::new_translation(&Vector3::new(1., 1., 0.));
             log!("New viewport set {}", &self.viewport);
@@ -253,4 +251,40 @@ impl System for RenderingSystem {
     }
 
 }
+#[cfg(test)]
+mod tests {
+    use super::*;
 
+    #[test]
+    fn test_viewport() {
+        let x = 100f32;
+        let y = 120f32;
+        let w = 40f32;
+        let h = 20f32;
+        let mut flip_xy = Matrix4::identity();
+        flip_xy.row_mut(1)[1] = -1.;
+
+        let viewport = Matrix4::new_translation(&Vector3::new(x, y + h, 0.))
+            * flip_xy
+            * Matrix4::new_nonuniform_scaling(&Vector3::new(w /2., h /2., 1.))
+            * Matrix4::new_translation(&Vector3::new(1., 1., 0.));
+        println!("Viewport testing {}", viewport.transform_point(&Point3::new(1., -1., 1.)));
+        assert_eq!(viewport.transform_point(&Point3::new(1., -1., 1.)), Point3::new(140., 140., 1.));
+        assert_eq!(viewport.transform_point(&Point3::new(-1., 1., 1.)), Point3::new(100., 120., 1.));
+        assert_eq!(viewport.transform_point(&Point3::new(-1., -1., 1.)), Point3::new(100., 140., 1.));
+        assert_eq!(viewport.transform_point(&Point3::new(1., 1., 1.)), Point3::new(140., 120., 1.));
+    }
+
+    #[test]
+    fn test_camera() {
+        let mut transform = TransformComponent::default();
+        transform.set_translation_xyz(10., 20., 100.);
+        let transform = transform.matrix();
+        println!("{:?}", transform);
+        println!("Viewport testing {}", transform.transform_point(&Point3::new(1., -1., 101.)));
+        let transform = Isometry3::look_at_rh(&Point3::new(10., 20., 100.), &Point3::new(10., 20., 0.), &Vector3::y());
+        println!("{:?}", transform.to_homogeneous());
+        println!("Viewport testing {}", transform.transform_point(&Point3::new(1., -1., 101.)));
+        assert_eq!(transform.transform_point(&Point3::new(1., 1., 1.)), Point3::new(1., 1., 101.));
+    }
+}
