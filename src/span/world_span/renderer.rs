@@ -32,37 +32,22 @@ impl System for RenderingSystem {
         let camera = cameras.get(&active_camera).unwrap();
         let meshes = c_store.get::<MeshComponent>();
         let transforms = c_store.get::<TransformComponent>();
-        let camera_transform = transforms.get(&active_camera).unwrap().matrix();
-        macro_rules! projects {
-            ($point: expr) => {
-                self.viewport.transform_point(&camera.project_point($point))
-            };
-            ($point: expr, $model: expr) => {
-                self.viewport.transform_point(&camera.project_point(&$model.transform_point($point)))
-            }
-        }
+        let camera_transform = transforms.get(&active_camera).unwrap()
+            .isometry().inverse().to_homogeneous();
+        let vp = self.viewport * camera.as_matrix() * camera_transform;
 
-        macro_rules! project {
-            ($point: expr) => {
-                self.viewport.transform_point(&camera.project_point(&camera_transform.transform_point($point)))
-            };
-            ($point: expr, $model: expr) => {
-                self.viewport.transform_point(&camera.project_point(&((camera_transform * $model).transform_point($point))))
-            }
-        }
-
-        macro_rules! project_radius {
+        macro_rules! project_size {
             ($radius: expr, $model: expr) => {
-                project!(&($model + Vector3::new(0., $radius, 0.))).y - project!($model).y
+                camera.transform_size($radius, camera_transform.transform_point($model).z.abs())
             }
         }
-
        
         let mut polygons = Vec::new();
         for (mesh, transform) in meshes.iter().filter(|entity| transforms.contains_key(entity.0)).map(|(entity, mesh)| {
             (mesh, transforms.get(entity).unwrap())
         }) {
             let model = transform.matrix();
+            let mvp = vp * model;
             let translation = Point3::from(*transform.translation());
             match mesh.cook() {
                 MeshRecipe::Basic { data } => {
@@ -74,7 +59,7 @@ impl System for RenderingSystem {
                     self.ctx.begin_path();
                     let mut first = true;
                     for (index, vertex) in data.vertices.iter().enumerate() {
-                        let point = project!(vertex, &model);
+                        let point = mvp.transform_point(vertex);
                         if first {
                             self.ctx.move_to(point.x as f64, point.y as f64);
                             first = false;
@@ -91,9 +76,9 @@ impl System for RenderingSystem {
                 },
                 MeshRecipe::Simple { data } => {
                     for i in data.polygons.iter() {
-                        let v1 = project!(&data.vertices[i.0], &model);
-                        let v2 = project!(&data.vertices[i.1], &model);
-                        let v3 = project!(&data.vertices[i.2], &model);
+                        let v1 = mvp.transform_point(&data.vertices[i.0]);
+                        let v2 = mvp.transform_point(&data.vertices[i.1]);
+                        let v3 = mvp.transform_point(&data.vertices[i.2]);
                         polygons.push((
                             ((v1.coords + v2.coords + v3.coords)/3.).z,
                             v1, v2, v3,
@@ -115,7 +100,7 @@ impl System for RenderingSystem {
                                 self.ctx.begin_path();
                                 let mut first = true;
                                 for vertex in vertices.iter() {
-                                    let point = project!(vertex, &model);
+                                    let point = mvp.transform_point(vertex);
                                     if first {
                                         self.ctx.move_to(point.x as f64, point.y as f64);
                                         first = false;
@@ -138,8 +123,10 @@ impl System for RenderingSystem {
                                     self.ctx.set_fill_style(&JsValue::from_str(&fill));
                                 }
                                 self.ctx.begin_path();
-                                let point = project!(center, &model);
-                                let radius = project_radius!(-*radius, &translation);
+                                let point = mvp.transform_point(center);
+                                log!("transforming size {} {}", radius, &translation);
+                                let radius = project_size!(*radius, &translation);
+                                log!("transformed size {} {}", radius, &translation);
                                 let _ = self.ctx.arc(point.x as f64, point.y as f64, radius as f64, 0., PI*2.);
                                 if action & 0x01 > 0 {
                                     self.ctx.fill();
@@ -173,15 +160,15 @@ impl System for RenderingSystem {
                 self.ctx.set_stroke_style(&JsValue::from_str("white"));
                 match shape {
                     Shape::Line { begin, end } => {
-                        let begin = project!(begin);
-                        let end = project!(end);
+                        let begin = vp.transform_point(begin);
+                        let end = vp.transform_point(end);
                         self.ctx.begin_path();
                         self.ctx.move_to(begin.x as f64, begin.y as f64);
                         self.ctx.line_to(end.x as f64, end.y as f64);
                         self.ctx.stroke();
                     },
                     Shape::Circle { center, radius } => {
-                        let center = project!(&Point3::from(*center.translation()));
+                        let center = vp.transform_point(&Point3::from(*center.translation()));
                         self.ctx.begin_path();
                         let _ = self.ctx.ellipse(
                             center.x as f64,
@@ -261,11 +248,11 @@ mod tests {
         let y = 120f32;
         let w = 40f32;
         let h = 20f32;
-        let mut flip_xy = Matrix4::identity();
-        flip_xy.row_mut(1)[1] = -1.;
+        let mut flip_y = Matrix4::identity();
+        flip_y.row_mut(1)[1] = -1.;
 
         let viewport = Matrix4::new_translation(&Vector3::new(x, y + h, 0.))
-            * flip_xy
+            * flip_y
             * Matrix4::new_nonuniform_scaling(&Vector3::new(w /2., h /2., 1.))
             * Matrix4::new_translation(&Vector3::new(1., 1., 0.));
         println!("Viewport testing {}", viewport.transform_point(&Point3::new(1., -1., 1.)));
@@ -273,18 +260,5 @@ mod tests {
         assert_eq!(viewport.transform_point(&Point3::new(-1., 1., 1.)), Point3::new(100., 120., 1.));
         assert_eq!(viewport.transform_point(&Point3::new(-1., -1., 1.)), Point3::new(100., 140., 1.));
         assert_eq!(viewport.transform_point(&Point3::new(1., 1., 1.)), Point3::new(140., 120., 1.));
-    }
-
-    #[test]
-    fn test_camera() {
-        let mut transform = TransformComponent::default();
-        transform.set_translation_xyz(10., 20., 100.);
-        let transform = transform.matrix();
-        println!("{:?}", transform);
-        println!("Viewport testing {}", transform.transform_point(&Point3::new(1., -1., 101.)));
-        let transform = Isometry3::look_at_rh(&Point3::new(10., 20., 100.), &Point3::new(10., 20., 0.), &Vector3::y());
-        println!("{:?}", transform.to_homogeneous());
-        println!("Viewport testing {}", transform.transform_point(&Point3::new(1., -1., 101.)));
-        assert_eq!(transform.transform_point(&Point3::new(1., 1., 1.)), Point3::new(1., 1., 101.));
     }
 }
