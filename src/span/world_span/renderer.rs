@@ -48,7 +48,7 @@ impl System for RenderingSystem {
         }) {
             let model = transform.matrix();
             let mvp = vp * model;
-            let translation = Point3::from(*transform.translation());
+            let translation = transform.position();
             match mesh.cook() {
                 MeshRecipe::Basic { data } => {
                     let mut cutter = data.breaks.iter();
@@ -124,9 +124,7 @@ impl System for RenderingSystem {
                                 }
                                 self.ctx.begin_path();
                                 let point = mvp.transform_point(center);
-                                log!("transforming size {} {}", radius, &translation);
                                 let radius = project_size!(*radius, &translation);
-                                log!("transformed size {} {}", radius, &translation);
                                 let _ = self.ctx.arc(point.x as f64, point.y as f64, radius as f64, 0., PI*2.);
                                 if action & 0x01 > 0 {
                                     self.ctx.fill();
@@ -182,6 +180,30 @@ impl System for RenderingSystem {
                 }
             }
 
+            let widgets = c_store.get::<WidgetComponent>();
+            self.ctx.set_text_align("center");
+            self.ctx.set_text_baseline("middle");
+            self.ctx.set_fill_style(&JsValue::from_str("grey"));
+            self.ctx.set_stroke_style(&JsValue::from_str("darkgreen"));
+            for (entity, widget) in widgets.iter() {
+                let translate = transforms.get(entity).unwrap().position();
+                let position = vp.transform_point(&translate);
+                let scale = project_size!(1f32, &translate);
+                match widget {
+                    Widget::Text { ref translation, ref text } => {
+                        let center = position + translation * scale;
+                        let _ = self.ctx.fill_text(text, center.x as f64, center.y as f64);
+                    },
+                    Widget::FramedText { ref translation, ref text, width, height } => {
+                        let w = width * scale;
+                        let h = height * scale;
+                        let center = position + translation * project_size!(1f32 , &translate);
+                        let _ = self.ctx.fill_text(text, center.x as f64, center.y as f64);
+                        self.ctx.rect((center.x - w / 2.) as f64, (center.y - h /2.) as f64, w as f64, h as f64);
+                        self.ctx.stroke();
+                    }
+                }
+            }
             /*
             let mut lines = Vec::new();
             let mut line = Vec::new();
