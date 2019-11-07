@@ -2,9 +2,6 @@ use std::cell::RefCell;
 use std::rc::Rc;
 use std::collections::HashMap;
 
-use wasm_bindgen::prelude::*;
-use wasm_bindgen::JsCast;
-
 use crate::scene::Scene;
 use crate::component::*;
 use crate::section::*;
@@ -12,6 +9,7 @@ use crate::container::Container;
 use crate::span::*;
 use crate::utils;
 use crate::input::*;
+use crate::prelude::{renderer, js::{self, JsCast}};
 
 
 pub struct CanvasMeta {
@@ -84,28 +82,40 @@ impl FpsCounterProto {
     }
 }
 
+#[derive(Clone)]
+pub struct RendererContext {
+    pub context_2d: renderer::Context2D,
+    pub context_gl: renderer::ContextGL,
+}
+
 pub struct Application {
-    document: web_sys::Document,
-    canvas: web_sys::HtmlCanvasElement, 
+    document: renderer::Document,
+    canvas: renderer::HtmlCanvasElement, 
+    canvas_gl: renderer::HtmlCanvasElement,
 
     scenes: HashMap<String, Scene>,
     path: String,
-    pub context: web_sys::CanvasRenderingContext2d, 
     meta: CanvasMeta,
 
     state: State,
-    pub input: Input,
 
+    pub input: Input,
+    pub context: RendererContext,
     pub counter: FpsCounter,
 }
 
 impl Application {
-    pub fn new_with_canvas_id(canvas_id: &str) -> Self {
+    pub fn new_with_canvas_id(canvas_id: &str, canvas_gl_id: &str) -> Self {
         utils::set_panic_hook();
         let document = Self::get_document();
         let canvas = document.get_element_by_id(canvas_id).unwrap();
-        let canvas: web_sys::HtmlCanvasElement = canvas
-            .dyn_into::<web_sys::HtmlCanvasElement>()
+        let canvas: renderer::HtmlCanvasElement = canvas
+            .dyn_into::<renderer::HtmlCanvasElement>()
+            .map_err(|_| ())
+            .unwrap();
+        let canvas_gl = document.get_element_by_id(canvas_gl_id).unwrap();
+        let canvas_gl: renderer::HtmlCanvasElement = canvas_gl
+            .dyn_into::<renderer::HtmlCanvasElement>()
             .map_err(|_| ())
             .unwrap();
 
@@ -115,18 +125,24 @@ impl Application {
         let scene = Scene::default(state.clone());
         let path = scene.path.clone();
         scenes.insert(scene.path.clone(), scene);
-        let context = canvas.get_context("2d")
+        let context_2d = canvas.get_context("2d")
             .unwrap()
             .unwrap()
-            .dyn_into::<web_sys::CanvasRenderingContext2d>()
+            .dyn_into::<renderer::Context2D>()
             .unwrap();
         let meta = CanvasMeta { w: canvas.width(), h: canvas.height() };
+        let context_gl = canvas_gl.get_context("webgl")
+            .unwrap()
+            .unwrap()
+            .dyn_into::<renderer::ContextGL>()
+            .unwrap();
         let mut app = Self {
             document,
             canvas,
+            canvas_gl,
             scenes,
             path,
-            context,
+            context: RendererContext { context_2d, context_gl },
             meta,
             state,
             input: InputProto::new(),
@@ -149,15 +165,15 @@ impl Application {
         }
     }
 
-    fn get_document() -> web_sys::Document {
-        web_sys::window().unwrap().document().unwrap()
+    fn get_document() -> renderer::Document {
+        renderer::window().unwrap().document().unwrap()
     }
 
-    fn get_window() -> web_sys::Window {
-        web_sys::window().expect("No global window exists")
+    fn get_window() -> renderer::Window {
+        renderer::window().expect("No global window exists")
     }
 
-    fn request_animation_frame(f: &Closure<dyn FnMut()>) {
+    fn request_animation_frame(f: &js::Closure<dyn FnMut()>) {
         Self::get_window()
             .request_animation_frame(f.as_ref().unchecked_ref())
             .expect("Failed to register `requestAnimationFrame`");
@@ -165,7 +181,7 @@ impl Application {
 
     pub fn render_tick(&self) {
         // Clear first?
-        self.context.clear_rect(0., 0., self.canvas.width() as f64, self.canvas.height() as f64);
+        self.context.context_2d.clear_rect(0., 0., self.canvas.width() as f64, self.canvas.height() as f64);
         let scene = self.scenes.get(&self.path).unwrap();
         scene.render_tick(&self.context);
     }

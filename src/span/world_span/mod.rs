@@ -1,13 +1,14 @@
 mod renderer;
+mod renderer_gl;
 
 use std::cell::RefCell;
 use std::any::Any;
-use wasm_bindgen::prelude::*;
+use dragon::*;
 
 use crate::core::State;
 use crate::span::SpanTrait;
 use crate::component::Event;
-use dragon::*;
+use crate::prelude::{renderer::RendererContext, js::JsValue};
 
 
 pub struct WorldSpan {
@@ -30,7 +31,7 @@ pub struct WorldSpan {
 impl WorldSpan {
     pub fn new(
         state: State,
-        ctx: web_sys::CanvasRenderingContext2d,
+        ctx: RendererContext,
         name: &str,
         text: &str,
         width: f32,
@@ -39,7 +40,7 @@ impl WorldSpan {
         let world = World::new();
         world.attach_default_camera();
 
-        let renderer = renderer::RenderingSystem::new(world.state.clone(), ctx);
+        let renderer = renderer::RenderingSystem::new(world.state.clone(), &ctx);
         world.state.register_renderer("renderer", renderer);
 
         Self {
@@ -62,7 +63,8 @@ impl WorldSpan {
         self.text = text.to_string();
     }
 
-    fn draw_outline(&self, ctx: &web_sys::CanvasRenderingContext2d) {
+    fn draw_outline(&self, ctx: &RendererContext) {
+        let ctx = &ctx.context_2d;
         ctx.set_stroke_style(&JsValue::from_str("white"));
         ctx.stroke_rect(self.x, self.y, self.w, self.h);
     }
@@ -78,13 +80,13 @@ impl SpanTrait for WorldSpan {
     fn dispatch_event(&mut self, _ev: &mut Event) {
     }
 
-    fn dispath(&mut self, data: Box<dyn Any>) {
+    fn dispatch(&mut self, data: Box<dyn Any>) {
         if let Ok(text) = data.downcast::<String>() {
             self.text = text.to_string();
         }
     }
 
-    fn render_tick(&self, _ctx: &web_sys::CanvasRenderingContext2d) {
+    fn render_tick(&self, _ctx: &RendererContext) {
         self.world.state.render_tick();
     }
     

@@ -1,5 +1,5 @@
 use std::time::{SystemTime, UNIX_EPOCH};
-use wasm_bindgen::prelude::*;
+use crate::prelude::{js::*, renderer::{self, Context2D, TextMetrics}};
 
 pub fn set_panic_hook() {
     // When the `console_error_panic_hook` feature is enabled, we can call the
@@ -53,14 +53,14 @@ macro_rules! debug {
     }
 }
 
-pub fn get_font_with_limit(ctx: &web_sys::CanvasRenderingContext2d, text: &str, size: f64, font: &str) -> u32 {
+pub fn get_font_with_limit(ctx: &Context2D, text: &str, size: f64, font: &str) -> u32 {
     let mut px = 5;
     if text.trim().len() < 1 {
         return px;
     }
 
     let mut style: String;
-    let mut res: Result<web_sys::TextMetrics, JsValue>;
+    let mut res: Result<TextMetrics, JsValue>;
     for _ in 0..1000 {
         style = format!("{}px {}", px, font);
         ctx.set_font(&style);
@@ -76,7 +76,7 @@ pub fn get_font_with_limit(ctx: &web_sys::CanvasRenderingContext2d, text: &str, 
 #[allow(dead_code)]
 #[inline]
 pub fn now_ms() -> u128 {
-    web_sys::window().unwrap().performance().unwrap().now() as u128
+    renderer::window().unwrap().performance().unwrap().now() as u128
     /*
     let now = web_sys::window().unwrap().performance().unwrap().now();
     let secs = now as u64 / 1000;

@@ -1,25 +1,27 @@
-use wasm_bindgen::prelude::*;
 use crate::scene::Scene;
 use crate::container::Container;
+use crate::prelude::{js, renderer::RendererContext};
 
 pub trait DrawOutline {
-    fn draw_outline(&self, ctx: &web_sys::CanvasRenderingContext2d);
+    fn draw_outline(&self, ctx: &RendererContext);
 }
 
 #[macro_export]
 macro_rules! impl_draw_outline {
     ($type: ty) => {
         impl DrawOutline for $type {
-            fn draw_outline(&self, ctx: &web_sys::CanvasRenderingContext2d) {
-                ctx.set_stroke_style(&JsValue::from_str("#07ce88"));
+            fn draw_outline(&self, ctx: &RendererContext) {
+                let ctx = &ctx.context_2d;
+                ctx.set_stroke_style(&js::JsValue::from_str("#07ce88"));
                 ctx.stroke_rect(self.x, self.y, self.w, self.h);
             }
         }
     };
     ($type: ty, $t: ident) => {
         impl<$t: ContentItem> DrawOutline for $type {
-            fn draw_outline(&self, ctx: &web_sys::CanvasRenderingContext2d) {
-                ctx.set_stroke_style(&JsValue::from_str("white"));
+            fn draw_outline(&self, ctx: &RendererContext) {
+                let ctx = &ctx.context_2d;
+                ctx.set_stroke_style(&js::JsValue::from_str("white"));
                 ctx.stroke_rect(self.x, self.y, self.w, self.h);
             }
         }
@@ -30,8 +32,9 @@ macro_rules! impl_draw_outline {
 impl_draw_outline!(Scene);
 
 impl DrawOutline for Container {
-    fn draw_outline(&self, ctx: &web_sys::CanvasRenderingContext2d) {
-        ctx.set_stroke_style(&JsValue::from_str("white"));
+    fn draw_outline(&self, ctx: &RendererContext) {
+        let ctx = &ctx.context_2d;
+        ctx.set_stroke_style(&js::JsValue::from_str("white"));
         ctx.stroke_rect(self.left, self.top, self.right - self.left, self.bottom - self.top);
     }
 }

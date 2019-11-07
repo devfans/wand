@@ -4,19 +4,19 @@ use dragon::core::*;
 use std::any::Any;
 use std::cmp::PartialOrd;
 use std::f64::consts::PI;
-use wasm_bindgen::prelude::*;
+use crate::prelude::{js::JsValue, renderer::RendererContext, renderer::Context2D };
 
 pub struct RenderingSystem {
     state: Rc<WorldState>,
-    ctx: web_sys::CanvasRenderingContext2d,
+    ctx: Context2D,
     viewport: Matrix4<f32>,
 }
 
 impl RenderingSystem {
-    pub fn new(state: Rc<WorldState>, ctx: web_sys::CanvasRenderingContext2d) -> Self {
+    pub fn new(state: Rc<WorldState>, ctx: &RendererContext) -> Self {
         Self {
             state,
-            ctx,
+            ctx: ctx.context_2d.clone(),
             viewport: Matrix4::identity(),
         }
     }

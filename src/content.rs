@@ -1,6 +1,7 @@
 use crate::section::*;
 use crate::component::*;
 use crate::span::*;
+use crate::prelude::renderer::RendererContext;
 
 pub enum Alignment {
     Left,
@@ -35,7 +36,7 @@ impl Content {
     }
 
     /// Deprecated
-    pub fn draw(&self, ctx: &web_sys::CanvasRenderingContext2d) {
+    pub fn draw(&self, ctx: &RendererContext) {
         match self {
             Content::Section { ref section } => {
                 let section = section.borrow();
@@ -49,7 +50,7 @@ impl Content {
 
     }
 
-    pub fn render_tick(&self, ctx: &web_sys::CanvasRenderingContext2d) {
+    pub fn render_tick(&self, ctx: &RendererContext) {
         match self {
             Content::Section { ref section } => {
                 let section = section.borrow();

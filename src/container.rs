@@ -1,6 +1,7 @@
 use crate::traits::*;
 use crate::content::Content;
 use crate::component::*;
+use crate::prelude::renderer::RendererContext;
 
 #[derive(PartialEq, Eq)]
 #[repr(u8)]
@@ -98,7 +99,7 @@ impl Container {
     }
 
     /// Deprecated
-    pub fn draw(&self, ctx: &web_sys::CanvasRenderingContext2d) {
+    pub fn draw(&self, ctx: &RendererContext) {
         // utils::log(format!("container outline {} {} {} {}", self.left, self.right, self.top, self.bottom).as_str());
 
         self.draw_outline(ctx);
@@ -107,7 +108,7 @@ impl Container {
         }
     }
 
-    pub fn render_tick(&self, ctx: &web_sys::CanvasRenderingContext2d) {
+    pub fn render_tick(&self, ctx: &RendererContext) {
         self.draw_outline(ctx);
         for item in self.inventory.iter() {
             item.render_tick(ctx);

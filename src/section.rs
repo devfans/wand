@@ -1,9 +1,9 @@
 
-use wasm_bindgen::prelude::*;
 use crate::container::*;
 use crate::content::*;
 use crate::component::*;
 use crate::span::*;
+use crate::prelude::{js, renderer::RendererContext};
 
 use std::cell::RefCell;
 use std::rc::{Rc, Weak};
@@ -99,18 +99,19 @@ impl Section {
         (self.w, self.h, true)
     }
     
-    fn draw_outline(&self, ctx: &web_sys::CanvasRenderingContext2d) {
-        ctx.set_stroke_style(&JsValue::from_str("#07ce88"));
+    fn draw_outline(&self, ctx: &RendererContext) {
+        let ctx = &ctx.context_2d;
+        ctx.set_stroke_style(&js::JsValue::from_str("#07ce88"));
         ctx.stroke_rect(self.x, self.y, self.w, self.h);
     }
 
     /// Deprecated
-    pub fn draw(&self, ctx: &web_sys::CanvasRenderingContext2d) {
+    pub fn draw(&self, ctx: &RendererContext) {
         self.draw_outline(ctx);
         self.container.draw(ctx);
     }
 
-    pub fn render_tick(&self, ctx: &web_sys::CanvasRenderingContext2d) {
+    pub fn render_tick(&self, ctx: &RendererContext) {
         self.draw_outline(ctx);
         self.container.render_tick(ctx);
     }

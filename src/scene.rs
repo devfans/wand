@@ -1,3 +1,6 @@
+use std::rc::Rc;
+use std::cell::RefCell;
+
 use crate::core::{State, CanvasMeta};
 use crate::traits::*;
 use crate::container::{Scrollable, Container};
@@ -5,8 +8,7 @@ use crate::section::*;
 use crate::content::Content;
 use crate::component::Event;
 use crate::span::*;
-use std::cell::RefCell;
-use std::rc::Rc;
+use crate::prelude::renderer::RendererContext;
 
 
 pub struct Scene {
@@ -78,11 +80,11 @@ impl Scene {
 
 
     /// Deprecated
-    pub fn draw(&self, ctx: &web_sys::CanvasRenderingContext2d) {
+    pub fn draw(&self, ctx: &RendererContext) {
         self.container.draw(ctx);
     }
 
-    pub fn render_tick(&self, ctx: &web_sys::CanvasRenderingContext2d) {
+    pub fn render_tick(&self, ctx: &RendererContext) {
         self.draw_outline(ctx);
         self.container.render_tick(ctx);
     }
