@@ -1,7 +1,6 @@
 mod utils;
 
-use wasm_bindgen::prelude::*;
-extern crate wand;
+use wand::{self, core, prelude::js::*};
 
 // When the `wee_alloc` feature is enabled, use `wee_alloc` as the global
 // allocator.
@@ -20,7 +19,7 @@ pub fn greet() {
 }
 
 pub fn start() {
-    let app = wand::core::Application::new_with_canvas_id("canvas");
+    let app = core::Application::new_with_canvas_id("canvas", "canvas_gl");
     app.draw();
 }
 
@@ -39,7 +38,7 @@ macro_rules! log {
 #[wasm_bindgen]
 impl Application {
     pub fn new() -> Self {
-        let mut app = wand::Application::new_with_canvas_id("canvas");
+        let mut app = core::Application::new_with_canvas_id("canvas", "canvas_gl");
         let state = app.get_state();
 
         let mut scene = wand::Scene::default(state.clone());
@@ -95,7 +94,7 @@ impl Application {
             let cursor = state.fetch_span("cursor").unwrap();
             let mut cursor = cursor.borrow_mut();
             // log!("Call {}", cursor.get_name());
-            cursor.as_mut().dispath(Box::new(format!("Cursor: x: {}, y: {}", x, y)));
+            cursor.as_mut().dispatch(Box::new(format!("Cursor: x: {}, y: {}", x, y)));
         }
         self.app.draw();
     }
