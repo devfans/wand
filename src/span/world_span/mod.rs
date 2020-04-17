@@ -1,5 +1,6 @@
 mod renderer;
 mod renderer_gl;
+mod renderer_sprite;
 
 use std::cell::RefCell;
 use std::any::Any;

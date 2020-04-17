@@ -22,3 +22,4 @@ pub mod js {
     pub use wasm_bindgen::{self, JsCast};
     pub use wasm_bindgen::prelude::*;
 }
+
